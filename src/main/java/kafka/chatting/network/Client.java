@@ -5,24 +5,34 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.DelimiterBasedFrameDecoder;
-import io.netty.handler.codec.Delimiters;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
+import io.netty.util.CharsetUtil;
+import kafka.chatting.model.CommandType;
+import kafka.chatting.model.Message;
+import kafka.chatting.model.MessageType;
+import kafka.chatting.model.User;
+import kafka.chatting.ui.EventTarget;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.Scanner;
-
-public class Client {
+public class Client implements Runnable {
     private static final String HOST = "localhost";
     private static final int PORT = 8888;
     private EventLoopGroup group;
     private Bootstrap bootstrap;
     private Channel channel;
+    private EventTarget<Message> eventTarget;
+    private static Client client;
+    private User user;
 
-    public Client() {
+    private Client() {
         bootstrap();
+    }
+
+    public static Client getInstance() {
+        if (client == null) {
+            client = new Client();
+        }
+        return client;
     }
 
     private void bootstrap() {
@@ -34,58 +44,18 @@ public class Client {
                 .handler(new ChannelInitializer<SocketChannel> () {
                     @Override
                     protected void initChannel(SocketChannel socketChannel) throws Exception {
-                        ChannelPipeline pipeline = socketChannel.pipeline();
-
-                        pipeline.addLast(new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter()));
-                        pipeline.addLast(new StringDecoder());
-                        pipeline.addLast(new StringEncoder());
-
-                        pipeline.addLast(new ClientHandler());
+                        socketChannel.pipeline()
+                                .addLast(new StringDecoder(CharsetUtil.UTF_8), new StringEncoder(CharsetUtil.UTF_8))
+                                .addLast(new ClientHandler(eventTarget));
                     }
                 });
-
-        try {
-            channel = bootstrap.connect(HOST, PORT).sync().channel();
-
-//            BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-            Scanner in = new Scanner(System.in);
-
-            System.out.println("gg");
-
-            ChannelFuture lastWriteFuture = null;
-
-            while (true) {
-                System.out.print("input > ");
-                System.out.flush();;
-                String message = in.nextLine();
-
-                lastWriteFuture = channel.writeAndFlush(message + "\r\n");
-
-                if ("bye".equals(message.toLowerCase())) {
-//                    sync(channel.closeFuture());
-                    channel.closeFuture().sync();
-                    break;
-                }
-            }
-
-            if (lastWriteFuture != null) {
-//                    sync(lastWriteFuture);
-                lastWriteFuture.sync();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            group.shutdownGracefully();
-        }
-
-
     }
 
+    @Override
     public void run() {
         try {
-            channel = bootstrap.connect(HOST, PORT)
-                    .sync()
-                    .channel();
+            channel = bootstrap.connect(HOST, PORT).channel();
+            channel.closeFuture().sync();
         } catch (Exception exception) {
             exception.printStackTrace();
         } finally {
@@ -93,33 +63,42 @@ public class Client {
         }
     }
 
-    public void send(String msg) {
-        if ("bye".equals(msg.toLowerCase())) {
-            sync(channel.closeFuture());
-            return;
-        }
-
-        ChannelFuture lastWriteFuture = channel.writeAndFlush(msg + "\r\n");
-
-        if (lastWriteFuture != null) {
-            sync(lastWriteFuture);
-        }
-    }
-
-    private void sync(ChannelFuture channelFuture) {
+    public void send(String text) {
         try {
-            channelFuture.sync();
-        } catch (InterruptedException exception) {
+            final Message message;
+
+            if ("!quit".equals(text)) {
+                message = makeMessage(CommandType.LEAVE, text);
+            } else {
+                message = makeMessage(CommandType.NORMAL, text);
+            }
+            ChannelFuture lastWriteFuture = channel.writeAndFlush(message.toJsonString());
+
+            if (lastWriteFuture != null) {
+                lastWriteFuture.sync();
+            }
+        } catch (Exception exception) {
             exception.printStackTrace();
-        } finally {
             group.shutdownGracefully();
         }
     }
 
-    public static void main(String[] args) {
-        Client client = new Client();
-//        client.run();
+    public void setEventTarget(EventTarget eventTarget) {
+        this.eventTarget = eventTarget;
+    }
+    public void setUser(User user) {
+        this.user = user;
+    }
+    public User getUser() {
+        return user;
+    }
 
-
+    private Message makeMessage(CommandType type, String message) {
+        return Message.builder()
+                .messageType(MessageType.CLIENT)
+                .commandType(type)
+                .user(user)
+                .message(message)
+                .build();
     }
 }

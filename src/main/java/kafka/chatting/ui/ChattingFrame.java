@@ -3,11 +3,10 @@ package kafka.chatting.ui;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
-import javax.swing.event.*;
 
 public class ChattingFrame extends JFrame {
     private Container chattingPanel = new ChattingPanel(new BorderLayout());
-    private Container inputPanel = new InputPanel(new BorderLayout(), (ChattingPanel) chattingPanel);
+    private Container inputPanel = new InputPanel(new BorderLayout());
 
     public ChattingFrame() {
         init();
@@ -21,7 +20,7 @@ public class ChattingFrame extends JFrame {
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         this.setSize(300, 500);
-        this.setResizable(false);
+//        this.setResizable(false);
         this.setLocationRelativeTo(getParent());
         this.setVisible(true);
     }
