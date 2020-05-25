@@ -17,7 +17,7 @@ public class MessageTest {
                 .build();
 
         String json = message.toJsonString();
-        Message convertedMessage = message.jsonToMessage(json);
+        Message convertedMessage = Message.jsonToMessage(json);
 
         assertEquals(message, convertedMessage);
     }

@@ -16,6 +16,7 @@ public class Message {
     private MessageType messageType;
     private CommandType commandType;
     private User user;
+    private Integer chatRoomNo;
     private LocalDateTime time;
     private String message;
 
@@ -29,11 +30,12 @@ public class Message {
         return gson.fromJson(json, Message.class);
     }
 
-    public static Message joinMessage(User user) {
+    public static Message joinMessage(User user, int chatRoomNo) {
         return Message.builder()
                 .messageType(MessageType.SERVER)
                 .commandType(CommandType.JOIN)
                 .user(user)
+                .chatRoomNo(chatRoomNo)
                 .time(LocalDateTime.now())
                 .build();
     }
@@ -46,21 +48,23 @@ public class Message {
                 .build();
     }
 
-    public static Message normalMessage(User user, String message) {
+    public static Message normalMessage(User user, int chatRoomNo, String message) {
         return Message.builder()
                 .messageType(MessageType.CLIENT)
                 .commandType(CommandType.NORMAL)
                 .user(user)
+                .chatRoomNo(chatRoomNo)
                 .message(message)
                 .time(LocalDateTime.now())
                 .build();
     }
 
-    public static Message leaveMessage(User user) {
+    public static Message leaveMessage(User user, int chatRoomNo) {
         return Message.builder()
                 .messageType(MessageType.SERVER)
                 .commandType(CommandType.LEAVE)
                 .user(user)
+                .chatRoomNo(chatRoomNo)
                 .time(LocalDateTime.now())
                 .build();
     }
