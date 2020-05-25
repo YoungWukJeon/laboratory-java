@@ -1,5 +1,6 @@
 package kafka.chatting.ui;
 
+import kafka.chatting.model.CommandType;
 import kafka.chatting.network.Client;
 
 import java.awt.*;
@@ -21,7 +22,7 @@ public class InputPanel extends JPanel {
             public void keyReleased(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     if (textField.getText().trim().length() > 0) {
-                        Client.getInstance().send(textField.getText().trim());
+                        Client.getInstance().send(CommandType.NORMAL, Client.getInstance().getChatRoomNo(), textField.getText().trim());
                         textField.setText("");
                     }
                 }

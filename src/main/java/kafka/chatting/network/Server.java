@@ -12,7 +12,8 @@ import io.netty.util.CharsetUtil;
 import kafka.chatting.model.User;
 
 public class Server {
-    public final static AttributeKey<User> USER_NAME = AttributeKey.newInstance("user");
+    public final static AttributeKey<User> USER = AttributeKey.newInstance("user");
+    public final static AttributeKey<Integer> CHAT_ROOM_NO = AttributeKey.newInstance("chat_room_no");
     private static final int PORT = 8888;
     private EventLoopGroup parentGroup;
     private EventLoopGroup childGroup;
@@ -38,6 +39,7 @@ public class Server {
                                 .addLast(new ServerHandler());
                     }
                 });
+        System.out.println("Server is ready to connect clients.");
     }
 
     public void run() {

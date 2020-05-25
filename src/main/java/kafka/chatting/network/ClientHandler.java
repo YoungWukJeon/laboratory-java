@@ -7,6 +7,8 @@ import kafka.chatting.model.Message;
 import kafka.chatting.model.MessageType;
 import kafka.chatting.ui.EventTarget;
 
+import java.util.Random;
+
 public class ClientHandler extends SimpleChannelInboundHandler<String> {
     private EventTarget<Message> eventTarget;
 
@@ -16,7 +18,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-        Client.getInstance().setUser(ctx.channel().attr(Server.USER_NAME).get());
+        Client.getInstance().setUser(ctx.channel().attr(Server.USER).get());
         System.out.println("Connection Established.");
     }
 
@@ -28,6 +30,10 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
         if (message.getMessageType() == MessageType.SERVER
                 && message.getCommandType() == CommandType.SET_USER) {
             Client.getInstance().setUser(message.getUser());
+            Random random = new Random();
+            int chatRoomNo = random.nextInt(2);
+            Client.getInstance().addChatRoomNo(chatRoomNo);
+            Client.getInstance().send(CommandType.JOIN, chatRoomNo, null);
             return;
         } else if (message.getMessageType() == MessageType.SERVER
                 && message.getCommandType() == CommandType.LEAVE

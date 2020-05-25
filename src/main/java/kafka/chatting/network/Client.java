@@ -14,7 +14,10 @@ import kafka.chatting.model.MessageType;
 import kafka.chatting.model.User;
 import kafka.chatting.ui.EventTarget;
 
-public class Client implements Runnable {
+import java.util.HashSet;
+import java.util.Set;
+
+public class Client {
     private static final String HOST = "localhost";
     private static final int PORT = 8888;
     private EventLoopGroup group;
@@ -23,6 +26,7 @@ public class Client implements Runnable {
     private EventTarget<Message> eventTarget;
     private static Client client;
     private User user;
+    private final Set<Integer> joinChatRoomNos = new HashSet<> ();
 
     private Client() {
         bootstrap();
@@ -51,7 +55,6 @@ public class Client implements Runnable {
                 });
     }
 
-    @Override
     public void run() {
         try {
             channel = bootstrap.connect(HOST, PORT).channel();
@@ -63,15 +66,13 @@ public class Client implements Runnable {
         }
     }
 
-    public void send(String text) {
+    public void send(CommandType commandType, Integer chatRoomNo, String text) {
         try {
-            final Message message;
-
-            if ("!quit".equals(text)) {
-                message = makeMessage(CommandType.LEAVE, text);
-            } else {
-                message = makeMessage(CommandType.NORMAL, text);
+            if ("quit".equals(text)) {
+                commandType = CommandType.LEAVE;
             }
+
+            final Message message = makeMessage(commandType, chatRoomNo, text);
             ChannelFuture lastWriteFuture = channel.writeAndFlush(message.toJsonString());
 
             if (lastWriteFuture != null) {
@@ -86,18 +87,37 @@ public class Client implements Runnable {
     public void setEventTarget(EventTarget eventTarget) {
         this.eventTarget = eventTarget;
     }
+
     public void setUser(User user) {
         this.user = user;
     }
+
     public User getUser() {
         return user;
     }
 
-    private Message makeMessage(CommandType type, String message) {
+    public Set<Integer> getJoinChatRoomNos() {
+        return joinChatRoomNos;
+    }
+
+    public Integer getChatRoomNo() {
+        for (Integer chatRoomNo: joinChatRoomNos) {
+            return chatRoomNo;
+        }
+        return null;
+    }
+
+    public void addChatRoomNo(int chatRoomNo) {
+        joinChatRoomNos.add(chatRoomNo);
+        System.out.println("Current user(" + user + ") room list joined => "  + this.joinChatRoomNos);
+    }
+
+    private Message makeMessage(CommandType type, Integer chatRoomNo, String message) {
         return Message.builder()
                 .messageType(MessageType.CLIENT)
                 .commandType(type)
                 .user(user)
+                .chatRoomNo(chatRoomNo)
                 .message(message)
                 .build();
     }
