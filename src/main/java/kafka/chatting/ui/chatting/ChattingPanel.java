@@ -1,18 +1,22 @@
-package kafka.chatting.ui;
+package kafka.chatting.ui.chatting;
 
+import kafka.chatting.model.CommandType;
 import kafka.chatting.model.Message;
 import kafka.chatting.network.Client;
+import kafka.chatting.ui.EventTarget;
 
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.Flow.*;
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 
 public class ChattingPanel extends JPanel implements EventTarget<Message> {
-    private JTextPane textPane = new JTextPane();
-    private Style style = textPane.addStyle("Color Style", null);
+    private final JTextPane textPane = new JTextPane();
+    private final Style style = textPane.addStyle("Color Style", null);
+    private Subscription subscription;
 
     public ChattingPanel(LayoutManager layout) {
         super(layout);
@@ -53,16 +57,14 @@ public class ChattingPanel extends JPanel implements EventTarget<Message> {
     }
 
     private void addClientCommand(Message message) {
-        switch (message.getCommandType()) {
-            case NORMAL:
-                if (Client.getInstance().getUser().equals(message.getUser())) {
-                    addClientTextForMe(message);
-                } else {
-                    addClientText(message);
-                }
-                break;
-            default:
-                System.out.println("Command Not Found(Client)");
+        if (message.getCommandType() == CommandType.NORMAL) {
+            if (Client.getInstance().getUser().equals(message.getUser())) {
+                addClientTextForMe(message);
+            } else {
+                addClientText(message);
+            }
+        } else {
+            System.out.println("Command Not Found(Client)");
         }
     }
 

@@ -9,7 +9,11 @@ import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
+import kafka.chatting.ChatRoom;
 import kafka.chatting.model.User;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class Server {
     public final static AttributeKey<User> USER = AttributeKey.newInstance("user");
@@ -18,6 +22,8 @@ public class Server {
     private EventLoopGroup parentGroup;
     private EventLoopGroup childGroup;
     private ServerBootstrap serverBootstrap;
+
+    private static final Map<Integer, ChatRoom> CHAT_ROOM_MAP = new HashMap<>();
 
     public Server() {
         bootstrap();

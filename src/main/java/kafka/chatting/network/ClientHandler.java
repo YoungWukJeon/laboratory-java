@@ -7,13 +7,13 @@ import kafka.chatting.model.Message;
 import kafka.chatting.model.MessageType;
 import kafka.chatting.ui.EventTarget;
 
-import java.util.Random;
-
 public class ClientHandler extends SimpleChannelInboundHandler<String> {
     private EventTarget<Message> eventTarget;
 
-    public ClientHandler(EventTarget eventTarget) {
-        this.eventTarget = eventTarget;
+    public void setEventTarget(EventTarget<Message> eventTarget) {
+        if (this.eventTarget == null) {
+            this.eventTarget = eventTarget;
+        }
     }
 
     @Override
@@ -30,10 +30,6 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
         if (message.getMessageType() == MessageType.SERVER
                 && message.getCommandType() == CommandType.SET_USER) {
             Client.getInstance().setUser(message.getUser());
-            Random random = new Random();
-            int chatRoomNo = random.nextInt(2);
-            Client.getInstance().addChatRoomNo(chatRoomNo);
-            Client.getInstance().send(CommandType.JOIN, chatRoomNo, null);
             return;
         } else if (message.getMessageType() == MessageType.SERVER
                 && message.getCommandType() == CommandType.LEAVE
@@ -42,7 +38,8 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
             ctx.close();
             System.exit(0);
         }
-        eventTarget.update(message);
+
+        this.eventTarget.update(message);
     }
 
     @Override

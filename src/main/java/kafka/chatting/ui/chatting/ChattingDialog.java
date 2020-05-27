@@ -1,14 +1,18 @@
-package kafka.chatting.ui;
+package kafka.chatting.ui.chatting;
 
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class ChattingFrame extends JFrame {
-    private Container chattingPanel = new ChattingPanel(new BorderLayout());
-    private Container inputPanel = new InputPanel(new BorderLayout());
+public class ChattingDialog extends JDialog {
+    private final JPanel chattingPanel;
+    private final JPanel inputPanel;
+    private final Integer chatRoomNo;
 
-    public ChattingFrame() {
+    public ChattingDialog(Object chatRoomNo) {
+        this.chatRoomNo = (Integer) chatRoomNo;
+        chattingPanel = new ChattingPanel(new BorderLayout());
+        inputPanel = new InputPanel(new BorderLayout(), this.chatRoomNo);
         init();
         addComponent();
         chattingPanel.setBackground(new Color(178, 199, 217));
@@ -16,9 +20,9 @@ public class ChattingFrame extends JFrame {
     }
 
     private void init() {
-        this.setTitle("Chatting");
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
+        this.setTitle("Chatting(" + chatRoomNo + ")");
+        this.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        this.setModal(false);
         this.setSize(300, 500);
 //        this.setResizable(false);
         this.setLocationRelativeTo(getParent());
@@ -30,7 +34,7 @@ public class ChattingFrame extends JFrame {
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener() {
-            BoundedRangeModel brm = scrollPane.getVerticalScrollBar().getModel();
+            final BoundedRangeModel brm = scrollPane.getVerticalScrollBar().getModel();
             boolean wasAtBottom = true;
             @Override
             public void adjustmentValueChanged(AdjustmentEvent adjustmentEvent) {
@@ -44,5 +48,9 @@ public class ChattingFrame extends JFrame {
 
         this.add(scrollPane);
         this.add(inputPanel, BorderLayout.SOUTH);
+    }
+
+    public void dismiss() {
+        this.dispose();
     }
 }

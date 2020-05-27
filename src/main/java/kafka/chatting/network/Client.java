@@ -27,6 +27,7 @@ public class Client {
     private static Client client;
     private User user;
     private final Set<Integer> joinChatRoomNos = new HashSet<> ();
+    private final ClientHandler clientHandler = new ClientHandler();
 
     private Client() {
         bootstrap();
@@ -50,7 +51,7 @@ public class Client {
                     protected void initChannel(SocketChannel socketChannel) throws Exception {
                         socketChannel.pipeline()
                                 .addLast(new StringDecoder(CharsetUtil.UTF_8), new StringEncoder(CharsetUtil.UTF_8))
-                                .addLast(new ClientHandler(eventTarget));
+                                .addLast(clientHandler);
                     }
                 });
     }
@@ -68,7 +69,7 @@ public class Client {
 
     public void send(CommandType commandType, Integer chatRoomNo, String text) {
         try {
-            if ("quit".equals(text)) {
+            if ("!quit".equals(text)) {
                 commandType = CommandType.LEAVE;
             }
 
@@ -84,8 +85,9 @@ public class Client {
         }
     }
 
-    public void setEventTarget(EventTarget eventTarget) {
+    public void setEventTarget(EventTarget<Message> eventTarget) {
         this.eventTarget = eventTarget;
+        clientHandler.setEventTarget(this.eventTarget);
     }
 
     public void setUser(User user) {
@@ -96,20 +98,13 @@ public class Client {
         return user;
     }
 
-    public Set<Integer> getJoinChatRoomNos() {
-        return joinChatRoomNos;
-    }
-
-    public Integer getChatRoomNo() {
-        for (Integer chatRoomNo: joinChatRoomNos) {
-            return chatRoomNo;
-        }
-        return null;
-    }
-
     public void addChatRoomNo(int chatRoomNo) {
         joinChatRoomNos.add(chatRoomNo);
         System.out.println("Current user(" + user + ") room list joined => "  + this.joinChatRoomNos);
+    }
+
+    public boolean isJoinedChatRoomNo(int chatRoomNo) {
+        return joinChatRoomNos.contains(chatRoomNo);
     }
 
     private Message makeMessage(CommandType type, Integer chatRoomNo, String message) {
