@@ -1,7 +1,7 @@
 package kafka.chatting.ui.chatroom_list;
 
+import kafka.chatting.MessageFactory;
 import kafka.chatting.model.ChatRoomInfo;
-import kafka.chatting.model.CommandType;
 import kafka.chatting.network.Client;
 import kafka.chatting.ui.chatting.ChattingDialog;
 
@@ -98,7 +98,7 @@ public class ChatRoomListPanel extends JPanel {
 
                     if (!Client.getInstance().isJoinedChatRoomNo(chatRoomNo)) {
                         Client.getInstance().addChatRoomNo(chatRoomNo);
-                        Client.getInstance().send(CommandType.JOIN, chatRoomNo, null);
+                        Client.getInstance().send(MessageFactory.userJoinClientMessage(Client.getInstance().getUser(), chatRoomNo));
                     }
 
                     System.out.println((row + 1) + " 번째가 더블 클릭됨");

@@ -8,9 +8,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
-import kafka.chatting.model.CommandType;
 import kafka.chatting.model.Message;
-import kafka.chatting.model.MessageType;
 import kafka.chatting.model.User;
 import kafka.chatting.ui.EventTarget;
 
@@ -23,7 +21,6 @@ public class Client {
     private EventLoopGroup group;
     private Bootstrap bootstrap;
     private Channel channel;
-    private EventTarget<Message> eventTarget;
     private static Client client;
     private User user;
     private final Set<Integer> joinChatRoomNos = new HashSet<> ();
@@ -67,13 +64,8 @@ public class Client {
         }
     }
 
-    public void send(CommandType commandType, Integer chatRoomNo, String text) {
+    public void send(final Message message) {
         try {
-            if ("!quit".equals(text)) {
-                commandType = CommandType.LEAVE;
-            }
-
-            final Message message = makeMessage(commandType, chatRoomNo, text);
             ChannelFuture lastWriteFuture = channel.writeAndFlush(message.toJsonString());
 
             if (lastWriteFuture != null) {
@@ -86,8 +78,7 @@ public class Client {
     }
 
     public void setEventTarget(EventTarget<Message> eventTarget) {
-        this.eventTarget = eventTarget;
-        clientHandler.setEventTarget(this.eventTarget);
+        clientHandler.setEventTarget(eventTarget);
     }
 
     public void setUser(User user) {
@@ -105,15 +96,5 @@ public class Client {
 
     public boolean isJoinedChatRoomNo(int chatRoomNo) {
         return joinChatRoomNos.contains(chatRoomNo);
-    }
-
-    private Message makeMessage(CommandType type, Integer chatRoomNo, String message) {
-        return Message.builder()
-                .messageType(MessageType.CLIENT)
-                .commandType(type)
-                .user(user)
-                .chatRoomNo(chatRoomNo)
-                .message(message)
-                .build();
     }
 }

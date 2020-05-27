@@ -1,6 +1,5 @@
 package kafka.chatting.ui.chatting;
 
-import kafka.chatting.model.CommandType;
 import kafka.chatting.model.Message;
 import kafka.chatting.network.Client;
 import kafka.chatting.ui.EventTarget;
@@ -57,7 +56,7 @@ public class ChattingPanel extends JPanel implements EventTarget<Message> {
     }
 
     private void addClientCommand(Message message) {
-        if (message.getCommandType() == CommandType.NORMAL) {
+        if (message.getCommandType() == Message.CommandType.NORMAL) {
             if (Client.getInstance().getUser().equals(message.getUser())) {
                 addClientTextForMe(message);
             } else {

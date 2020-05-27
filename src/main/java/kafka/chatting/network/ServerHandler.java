@@ -6,14 +6,14 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import kafka.chatting.model.CommandType;
+import kafka.chatting.MessageFactory;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
 import java.util.function.Predicate;
 
 public class ServerHandler extends SimpleChannelInboundHandler<String> {
-    private static ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+    private static final ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
@@ -23,7 +23,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         System.out.println(user + " has joined.");
 
         // 추가된 사용자에게 유저 정보 전달
-        incoming.writeAndFlush(Message.setUserMessage(user).toJsonString());
+        incoming.writeAndFlush(MessageFactory.clientSetUserServerMessage(user).toJsonString());
         // 사용자가 추가되었을 때 기존 사용자에게 알림
 //        broadcast(Message.joinMessage(user).toJsonString());
         channelGroup.add(incoming);
@@ -58,30 +58,33 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-        Message message = Message.jsonToMessage(msg);
+        final Message message = Message.jsonToMessage(msg);
         System.out.println("Server received > " + message);
+        processReadMessage(ctx.channel(), message);
+    }
 
+    private void processReadMessage(Channel channel, Message message) throws Exception {
         switch (message.getCommandType()) {
             case JOIN:
-                ctx.channel().attr(Server.CHAT_ROOM_NO).set(message.getChatRoomNo());
-                broadcast(Message.joinMessage(message.getUser(), message.getChatRoomNo()));
+                channel.attr(Server.CHAT_ROOM_NO).set(message.getChatRoomNo());
+                broadcast(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
                 break;
             case LEAVE:
-                ctx.channel().writeAndFlush(Message.leaveMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
+                channel.writeAndFlush(MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
                 break;
             case NORMAL:
-                broadcast(Message.normalMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()));
+                broadcast(MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()));
                 break;
             default:
                 System.out.println("Command Not Found");
         }
     }
 
-    private void broadcast(Message message) {
+    private void broadcast(Message message) throws Exception {
         System.out.println("Server broadcast > " + message);
         channelGroup.stream()
                 .filter(Predicate.not(
-                        channel -> message.getCommandType() == CommandType.JOIN
+                        channel -> message.getCommandType() == Message.CommandType.JOIN
                                 && channel.attr(Server.USER).get().equals(message.getUser())))
                 .filter(channel -> channel.attr(Server.CHAT_ROOM_NO).get().equals(message.getChatRoomNo()))
                 .forEach(channel -> channel.writeAndFlush(message.toJsonString()));

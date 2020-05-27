@@ -10,7 +10,7 @@ public class MessageTest {
     @Test
     public void json_변환() {
         Message message = Message.builder()
-                .messageType(MessageType.CLIENT)
+                .messageType(Message.MessageType.CLIENT)
                 .user(new User())
                 .message("테스트")
                 .time(LocalDateTime.now())

@@ -2,9 +2,7 @@ package kafka.chatting.network;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import kafka.chatting.model.CommandType;
 import kafka.chatting.model.Message;
-import kafka.chatting.model.MessageType;
 import kafka.chatting.ui.EventTarget;
 
 public class ClientHandler extends SimpleChannelInboundHandler<String> {
@@ -24,21 +22,23 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String text) throws Exception {
-        System.out.println("Received > " + text);
-        Message message = Message.jsonToMessage(text);
+        final Message message = Message.jsonToMessage(text);
+        System.out.println("Received > " + message);
+        processReadMessage(ctx, message);
+    }
 
-        if (message.getMessageType() == MessageType.SERVER
-                && message.getCommandType() == CommandType.SET_USER) {
+    private void processReadMessage(ChannelHandlerContext ctx, Message message) {
+        if (message.getMessageType() == Message.MessageType.SERVER
+                && message.getCommandType() == Message.CommandType.SET_USER) {
             Client.getInstance().setUser(message.getUser());
             return;
-        } else if (message.getMessageType() == MessageType.SERVER
-                && message.getCommandType() == CommandType.LEAVE
+        } else if (message.getMessageType() == Message.MessageType.SERVER
+                && message.getCommandType() == Message.CommandType.LEAVE
                 && Client.getInstance().getUser().equals(message.getUser())) {
             System.out.println("ChattingClient terminated because of user '!quit' command");
             ctx.close();
             System.exit(0);
         }
-
         this.eventTarget.update(message);
     }
 
