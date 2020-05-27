@@ -38,13 +38,16 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
             System.out.println("ChattingClient terminated because of user '!quit' command");
             ctx.close();
             System.exit(0);
+            // TODO: 2020-05-28 !quit를 입력했을 때, 클라이언트 종료가 아니고 채팅방 자체에서 나가게 설정을 해야됨. 그리고 다이얼로그를 dismiss 하게...
         }
         this.eventTarget.update(message);
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        System.err.println("Connection was disconnected abnormally because of server problem.");
+        System.err.println(cause.getMessage());
+//        cause.printStackTrace();
         ctx.close();
     }
 }

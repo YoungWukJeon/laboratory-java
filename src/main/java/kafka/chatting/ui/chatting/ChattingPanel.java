@@ -6,7 +6,6 @@ import kafka.chatting.ui.EventTarget;
 
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.Flow.*;
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Style;
@@ -15,7 +14,6 @@ import javax.swing.text.StyleConstants;
 public class ChattingPanel extends JPanel implements EventTarget<Message> {
     private final JTextPane textPane = new JTextPane();
     private final Style style = textPane.addStyle("Color Style", null);
-    private Subscription subscription;
 
     public ChattingPanel(LayoutManager layout) {
         super(layout);
@@ -40,7 +38,7 @@ public class ChattingPanel extends JPanel implements EventTarget<Message> {
         }
     }
 
-    private void addServerCommand(Message message) {
+    private void addServerMessage(Message message) {
         switch (message.getCommandType()) {
             case JOIN:
                 ChattingTextStyle.adjustServerTextStyle(style);
@@ -55,19 +53,19 @@ public class ChattingPanel extends JPanel implements EventTarget<Message> {
         }
     }
 
-    private void addClientCommand(Message message) {
+    private void addClientMessage(Message message) {
         if (message.getCommandType() == Message.CommandType.NORMAL) {
             if (Client.getInstance().getUser().equals(message.getUser())) {
-                addClientTextForMe(message);
+                paintClientMessageForMe(message);
             } else {
-                addClientText(message);
+                paintClientMessage(message);
             }
         } else {
             System.out.println("Command Not Found(Client)");
         }
     }
 
-    private void addClientText(Message message) {
+    private void paintClientMessage(Message message) {
         ChattingTextStyle.adjustClientUserStyle(style);
         addText(message.getUser().toString() + " ");
         ChattingTextStyle.adjustClientTimeStyle(style);
@@ -76,7 +74,7 @@ public class ChattingPanel extends JPanel implements EventTarget<Message> {
         addText(message.getMessage() + "\n");
     }
 
-    private void addClientTextForMe(Message message) {
+    private void paintClientMessageForMe(Message message) {
         ChattingTextStyle.adjustClientTimeStyleForMe(style);
         addText("[" + message.getTime().format(DateTimeFormatter.ofPattern(("[yyyy-MM-dd hh:mm:ss]"))) + "]\n");
         ChattingTextStyle.adjustClientTextStyleForMe(style);
@@ -87,10 +85,10 @@ public class ChattingPanel extends JPanel implements EventTarget<Message> {
     public void update(Message message) {
         switch (message.getMessageType()) {
             case SERVER:
-                addServerCommand(message);
+                addServerMessage(message);
                 break;
             case CLIENT:
-                addClientCommand(message);
+                addClientMessage(message);
                 break;
             default:
                 System.out.println("MessageType Not Found");

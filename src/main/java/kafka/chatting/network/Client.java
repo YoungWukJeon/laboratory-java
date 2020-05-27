@@ -66,11 +66,7 @@ public class Client {
 
     public void send(final Message message) {
         try {
-            ChannelFuture lastWriteFuture = channel.writeAndFlush(message.toJsonString());
-
-            if (lastWriteFuture != null) {
-                lastWriteFuture.sync();
-            }
+            channel.writeAndFlush(message.toJsonString()).sync();
         } catch (Exception exception) {
             exception.printStackTrace();
             group.shutdownGracefully();

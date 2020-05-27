@@ -1,7 +1,7 @@
 package kafka.chatting.model;
 
 public class User {
-    private String name;
+    private final String name;
 
     public User() {
         this.name = String.format("USER#%04d", getRandomNumber());

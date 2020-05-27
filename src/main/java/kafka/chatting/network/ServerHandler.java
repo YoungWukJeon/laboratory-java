@@ -23,10 +23,17 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         System.out.println(user + " has joined.");
 
         // 추가된 사용자에게 유저 정보 전달
-        incoming.writeAndFlush(MessageFactory.clientSetUserServerMessage(user).toJsonString());
+        writeMessage(incoming, MessageFactory.clientSetUserServerMessage(user));
         // 사용자가 추가되었을 때 기존 사용자에게 알림
 //        broadcast(Message.joinMessage(user).toJsonString());
         channelGroup.add(incoming);
+    }
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, String msg) {
+        final Message message = Message.jsonToMessage(msg);
+        System.out.println("Server received > " + message);
+        processReadMessage(ctx.channel(), message);
     }
 
     @Override
@@ -57,20 +64,27 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-        final Message message = Message.jsonToMessage(msg);
-        System.out.println("Server received > " + message);
-        processReadMessage(ctx.channel(), message);
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        final User user = ctx.channel().attr(Server.USER).get();
+        final Integer chatRoomNo = ctx.channel().attr(Server.CHAT_ROOM_NO).get();
+
+        ctx.close();
+        System.err.println("User(" + user + ") was disconnected abnormally in chatRoomNo(" + chatRoomNo + ")");
+        System.err.println("current channel count: " + (channelGroup.size()));
+        cause.printStackTrace();
+
+        final Message message = MessageFactory.userLeaveServerMessage(user, chatRoomNo);
+        broadcast(message);
     }
 
-    private void processReadMessage(Channel channel, Message message) throws Exception {
+    private void processReadMessage(Channel channel, Message message) {
         switch (message.getCommandType()) {
             case JOIN:
                 channel.attr(Server.CHAT_ROOM_NO).set(message.getChatRoomNo());
                 broadcast(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
                 break;
             case LEAVE:
-                channel.writeAndFlush(MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
+                broadcast(MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()));
                 break;
             case NORMAL:
                 broadcast(MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()));
@@ -80,13 +94,18 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         }
     }
 
-    private void broadcast(Message message) throws Exception {
+    private void broadcast(Message message) {
         System.out.println("Server broadcast > " + message);
         channelGroup.stream()
                 .filter(Predicate.not(
                         channel -> message.getCommandType() == Message.CommandType.JOIN
                                 && channel.attr(Server.USER).get().equals(message.getUser())))
-                .filter(channel -> channel.attr(Server.CHAT_ROOM_NO).get().equals(message.getChatRoomNo()))
-                .forEach(channel -> channel.writeAndFlush(message.toJsonString()));
+                .filter(channel -> channel.attr(Server.CHAT_ROOM_NO).get() != null
+                        && channel.attr(Server.CHAT_ROOM_NO).get().equals(message.getChatRoomNo()))
+                .forEach(channel -> writeMessage(channel, message));
+    }
+
+    private void writeMessage(Channel channel, Message message) {
+        channel.writeAndFlush(message.toJsonString());
     }
 }

@@ -52,6 +52,7 @@ public class MessageFactory {
                 .messageType(Message.MessageType.SERVER)
                 .commandType(Message.CommandType.SET_USER)
                 .user(user)
+                .time(LocalDateTime.now())
                 .build();
     }
 
