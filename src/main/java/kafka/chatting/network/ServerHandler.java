@@ -10,6 +10,8 @@ import kafka.chatting.MessageFactory;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 
 public class ServerHandler extends SimpleChannelInboundHandler<String> {
@@ -66,25 +68,31 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         final User user = ctx.channel().attr(Server.USER).get();
-        final Integer chatRoomNo = ctx.channel().attr(Server.CHAT_ROOM_NO).get();
+        final Set<Integer> chatRoomNoes = ctx.channel().attr(Server.CHAT_ROOM_NO).get();
 
         ctx.close();
-        System.err.println("User(" + user + ") was disconnected abnormally in chatRoomNo(" + chatRoomNo + ")");
+        System.err.println("User(" + user + ") was disconnected abnormally in chatRoomNo(" + chatRoomNoes + ")");
         System.err.println("current channel count: " + (channelGroup.size()));
         cause.printStackTrace();
 
-        final Message message = MessageFactory.userLeaveServerMessage(user, chatRoomNo);
-        broadcast(message);
+        chatRoomNoes.forEach(chatRoomNo -> broadcast(MessageFactory.userLeaveServerMessage(user, chatRoomNo)));
     }
 
     private void processReadMessage(Channel channel, Message message) {
+        Set<Integer> list = channel.attr(Server.CHAT_ROOM_NO).get();
+
         switch (message.getCommandType()) {
             case JOIN:
-                channel.attr(Server.CHAT_ROOM_NO).set(message.getChatRoomNo());
+                if (list == null) {
+                    list = new HashSet<> ();
+                    channel.attr(Server.CHAT_ROOM_NO).set(list);
+                }
+                list.add(message.getChatRoomNo());
                 broadcast(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
                 break;
             case LEAVE:
                 broadcast(MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()));
+                list.remove(message.getChatRoomNo());
                 break;
             case NORMAL:
                 broadcast(MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()));
@@ -101,7 +109,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
                         channel -> message.getCommandType() == Message.CommandType.JOIN
                                 && channel.attr(Server.USER).get().equals(message.getUser())))
                 .filter(channel -> channel.attr(Server.CHAT_ROOM_NO).get() != null
-                        && channel.attr(Server.CHAT_ROOM_NO).get().equals(message.getChatRoomNo()))
+                        && channel.attr(Server.CHAT_ROOM_NO).get().contains(message.getChatRoomNo()))
                 .forEach(channel -> writeMessage(channel, message));
     }
 

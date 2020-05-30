@@ -2,22 +2,23 @@ package kafka.chatting.ui.chatting;
 
 import kafka.chatting.model.Message;
 import kafka.chatting.network.Client;
-import kafka.chatting.ui.EventTarget;
 
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 
-public class ChattingPanel extends JPanel implements EventTarget<Message> {
+public class ChattingPanel extends JPanel {
     private final JTextPane textPane = new JTextPane();
     private final Style style = textPane.addStyle("Color Style", null);
+    private final List<Message> messages;
 
-    public ChattingPanel(LayoutManager layout) {
+    public ChattingPanel(LayoutManager layout, List<Message> messages) {
         super(layout);
-        Client.getInstance().setEventTarget(this);
+        this.messages = messages;
         addComponent();
     }
 
@@ -25,6 +26,8 @@ public class ChattingPanel extends JPanel implements EventTarget<Message> {
         textPane.setEditable(false);
         textPane.setAutoscrolls(true);
         textPane.setBackground(new Color(178, 199, 217));
+
+        messages.forEach(this::addMessageToTextPane); // 기존에 있던 채팅 목록들을 textPane에 붙여넣음
         this.add(textPane);
     }
 
@@ -56,33 +59,23 @@ public class ChattingPanel extends JPanel implements EventTarget<Message> {
     private void addClientMessage(Message message) {
         if (message.getCommandType() == Message.CommandType.NORMAL) {
             if (Client.getInstance().getUser().equals(message.getUser())) {
-                paintClientMessageForMe(message);
+                ChattingTextStyle.adjustMyTimeTextStyle(style);
+                addText("[" + message.getTime().format(DateTimeFormatter.ofPattern(("[yyyy-MM-dd hh:mm]"))) + "]\n");
+                ChattingTextStyle.adjustMyMessageTextStyle(style);
             } else {
-                paintClientMessage(message);
+                ChattingTextStyle.adjustUserTextStyle(style);
+                addText(message.getUser().toString() + " ");
+                ChattingTextStyle.adjustTimeTextStyle(style);
+                addText("[" + message.getTime().format(DateTimeFormatter.ofPattern(("[yyyy-MM-dd hh:mm]"))) + "]\n");
+                ChattingTextStyle.adjustMessageTextStyle(style);
             }
+            addText(message.getMessage() + "\n");
         } else {
             System.out.println("Command Not Found(Client)");
         }
     }
 
-    private void paintClientMessage(Message message) {
-        ChattingTextStyle.adjustClientUserStyle(style);
-        addText(message.getUser().toString() + " ");
-        ChattingTextStyle.adjustClientTimeStyle(style);
-        addText("[" + message.getTime().format(DateTimeFormatter.ofPattern(("[yyyy-MM-dd hh:mm:ss]"))) + "]\n");
-        ChattingTextStyle.adjustClientTextStyle(style);
-        addText(message.getMessage() + "\n");
-    }
-
-    private void paintClientMessageForMe(Message message) {
-        ChattingTextStyle.adjustClientTimeStyleForMe(style);
-        addText("[" + message.getTime().format(DateTimeFormatter.ofPattern(("[yyyy-MM-dd hh:mm:ss]"))) + "]\n");
-        ChattingTextStyle.adjustClientTextStyleForMe(style);
-        addText(message.getMessage() + "\n");
-    }
-
-    @Override
-    public void update(Message message) {
+    public void addMessageToTextPane(Message message) {
         switch (message.getMessageType()) {
             case SERVER:
                 addServerMessage(message);
@@ -103,42 +96,42 @@ public class ChattingPanel extends JPanel implements EventTarget<Message> {
             StyleConstants.setForeground(style, Color.RED);
             StyleConstants.setAlignment(style, StyleConstants.ALIGN_CENTER);
             StyleConstants.setBackground(style, new Color(169, 189, 206));
-            StyleConstants.setFontSize(style, 10);
+            StyleConstants.setFontSize(style, 11);
         }
-        private static void adjustClientStyle(Style style) {
+        private static void adjustCommonStyle(Style style) {
             StyleConstants.setBold(style, false);
             StyleConstants.setItalic(style, false);
             StyleConstants.setForeground(style, Color.BLACK);
             StyleConstants.setAlignment(style, StyleConstants.ALIGN_LEFT);
         }
-        private static void adjustClientStyleForMe(Style style) {
-            adjustClientStyle(style);
+        private static void adjustMyCommonStyle(Style style) {
+            adjustCommonStyle(style);
             StyleConstants.setAlignment(style, StyleConstants.ALIGN_RIGHT);
         }
-        public static void adjustClientUserStyle(Style style) {
-            adjustClientStyle(style);
+        public static void adjustUserTextStyle(Style style) {
+            adjustCommonStyle(style);
+            StyleConstants.setBackground(style, new Color(255, 255, 255, 1));
+            StyleConstants.setFontSize(style, 11);
+        }
+        public static void adjustMessageTextStyle(Style style) {
+            adjustCommonStyle(style);
+            StyleConstants.setBackground(style, Color.WHITE);
+            StyleConstants.setFontSize(style, 13);
+        }
+        public static void adjustMyMessageTextStyle(Style style) {
+            adjustMyCommonStyle(style);
+            StyleConstants.setBackground(style, new Color(255, 255, 51));
+            StyleConstants.setFontSize(style, 13);
+        }
+        public static void adjustTimeTextStyle(Style style) {
+            adjustCommonStyle(style);
             StyleConstants.setBackground(style, new Color(255, 255, 255, 1));
             StyleConstants.setFontSize(style, 10);
         }
-        public static void adjustClientTextStyle(Style style) {
-            adjustClientStyle(style);
-            StyleConstants.setBackground(style, Color.WHITE);
-            StyleConstants.setFontSize(style, 12);
-        }
-        public static void adjustClientTextStyleForMe(Style style) {
-            adjustClientStyleForMe(style);
-            StyleConstants.setBackground(style, new Color(255, 255, 51));
-            StyleConstants.setFontSize(style, 12);
-        }
-        public static void adjustClientTimeStyle(Style style) {
-            adjustClientStyle(style);
+        public static void adjustMyTimeTextStyle(Style style) {
+            adjustMyCommonStyle(style);
             StyleConstants.setBackground(style, new Color(255, 255, 255, 1));
-            StyleConstants.setFontSize(style, 9);
-        }
-        public static void adjustClientTimeStyleForMe(Style style) {
-            adjustClientStyleForMe(style);
-            StyleConstants.setBackground(style, new Color(255, 255, 255, 1));
-            StyleConstants.setFontSize(style, 9);
+            StyleConstants.setFontSize(style, 10);
         }
     }
 }

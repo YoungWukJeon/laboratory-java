@@ -3,16 +3,8 @@ package kafka.chatting.network;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import kafka.chatting.model.Message;
-import kafka.chatting.ui.EventTarget;
 
 public class ClientHandler extends SimpleChannelInboundHandler<String> {
-    private EventTarget<Message> eventTarget;
-
-    public void setEventTarget(EventTarget<Message> eventTarget) {
-        if (this.eventTarget == null) {
-            this.eventTarget = eventTarget;
-        }
-    }
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
@@ -35,12 +27,12 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
         } else if (message.getMessageType() == Message.MessageType.SERVER
                 && message.getCommandType() == Message.CommandType.LEAVE
                 && Client.getInstance().getUser().equals(message.getUser())) {
-            System.out.println("ChattingClient terminated because of user '!quit' command");
-            ctx.close();
-            System.exit(0);
-            // TODO: 2020-05-28 !quit를 입력했을 때, 클라이언트 종료가 아니고 채팅방 자체에서 나가게 설정을 해야됨. 그리고 다이얼로그를 dismiss 하게...
+            Client.getInstance().addMessage(message);
+            System.out.println("Exit this room(chatRoomNo=" + message.getChatRoomNo() + ") because of user '!quit' command.");
+            Client.getInstance().removeChatRoomNo(message.getChatRoomNo());
+            return;
         }
-        this.eventTarget.update(message);
+        Client.getInstance().addMessage(message);
     }
 
     @Override

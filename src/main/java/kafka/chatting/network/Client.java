@@ -10,12 +10,15 @@ import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
-import kafka.chatting.ui.EventTarget;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.SubmissionPublisher;
+import java.util.stream.Collectors;
 
-public class Client {
+public class Client extends SubmissionPublisher<Message> {
     private static final String HOST = "localhost";
     private static final int PORT = 8888;
     private EventLoopGroup group;
@@ -23,8 +26,9 @@ public class Client {
     private Channel channel;
     private static Client client;
     private User user;
-    private final Set<Integer> joinChatRoomNos = new HashSet<> ();
     private final ClientHandler clientHandler = new ClientHandler();
+    private final Set<Integer> joinChatRoomNos = new HashSet<> ();
+    private final List<Message> receivedMessages = new ArrayList<> ();
 
     private Client() {
         bootstrap();
@@ -66,15 +70,12 @@ public class Client {
 
     public void send(final Message message) {
         try {
+            System.out.println("Send > " + message);
             channel.writeAndFlush(message.toJsonString()).sync();
         } catch (Exception exception) {
             exception.printStackTrace();
             group.shutdownGracefully();
         }
-    }
-
-    public void setEventTarget(EventTarget<Message> eventTarget) {
-        clientHandler.setEventTarget(eventTarget);
     }
 
     public void setUser(User user) {
@@ -90,7 +91,29 @@ public class Client {
         System.out.println("Current user(" + user + ") room list joined => "  + this.joinChatRoomNos);
     }
 
+    public void removeChatRoomNo(int chatRoomNo) {
+        joinChatRoomNos.remove(chatRoomNo);
+        receivedMessages.removeAll(
+                receivedMessages.stream()
+                        .filter(message -> message.getChatRoomNo() == chatRoomNo)
+                        .collect(Collectors.toList())
+        );
+        System.out.println("Current user(" + user + ") room list joined => "  + this.joinChatRoomNos);
+    }
+
     public boolean isJoinedChatRoomNo(int chatRoomNo) {
         return joinChatRoomNos.contains(chatRoomNo);
+    }
+
+    public void addMessage(Message message) {
+        receivedMessages.add(message);
+        System.out.println("Publishing > " + message);
+        this.submit(message);
+    }
+
+    public List<Message> getMessagesInChatRoomNo(int chatRoomNo) {
+        return receivedMessages.stream()
+                .filter(message -> message.getChatRoomNo() == chatRoomNo)
+                .collect(Collectors.toList());
     }
 }
