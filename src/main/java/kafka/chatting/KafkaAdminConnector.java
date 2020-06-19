@@ -1,0 +1,29 @@
+package kafka.chatting;
+
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+
+import java.util.Properties;
+
+public class KafkaAdminConnector {
+    private static final Properties PROPS = new Properties();
+    private final AdminClient adminClient;
+
+    private KafkaAdminConnector() {
+        init();
+        this.adminClient = AdminClient.create(PROPS);
+    }
+
+    private void init() {
+        PROPS.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        PROPS.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
+    }
+
+    public AdminClient getAdminClient() {
+        return adminClient;
+    }
+
+    public static KafkaAdminConnector from() {
+        return new KafkaAdminConnector();
+    }
+}
