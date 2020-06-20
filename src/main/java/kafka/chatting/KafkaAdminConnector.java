@@ -5,16 +5,12 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 
 import java.util.Properties;
 
-public class KafkaAdminConnector {
+public enum KafkaAdminConnector {
+    INSTANCE;
     private static final Properties PROPS = new Properties();
-    private final AdminClient adminClient;
+    private static AdminClient adminClient;
 
-    private KafkaAdminConnector() {
-        init();
-        this.adminClient = AdminClient.create(PROPS);
-    }
-
-    private void init() {
+    private static void init() {
         PROPS.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         PROPS.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
     }
@@ -23,7 +19,11 @@ public class KafkaAdminConnector {
         return adminClient;
     }
 
-    public static KafkaAdminConnector from() {
-        return new KafkaAdminConnector();
+    public static KafkaAdminConnector getInstance() {
+        if (adminClient == null) {
+            init();
+            adminClient = AdminClient.create(PROPS);
+        }
+        return INSTANCE;
     }
 }

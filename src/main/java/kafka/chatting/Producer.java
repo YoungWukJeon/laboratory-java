@@ -7,37 +7,35 @@ import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.util.Properties;
 
-public class Producer {
-    private static final String TOPIC_NAME = "chatting_message";
-    private Properties properties = new Properties();
+public enum Producer {
+    INSTANCE;
 
-    public Producer() {
-        init();
-    }
+    private static final Properties PROPS = new Properties();
+    private static KafkaProducer<String, String> kafkaProducer;
 
-    private void init() {
-        properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
-    }
-
-    public void run() {
-        KafkaProducer<String, String> producer = new KafkaProducer<> (properties);
-
-        try {
-            String message = "";
-            ProducerRecord<String, String> record = new ProducerRecord<>(TOPIC_NAME, message);
-            producer.send(record, (metadata, exception) -> {
-                if (exception != null) {
-                    System.out.println("Exception Occurred!");
-                    exception.printStackTrace();
-                }
-            });
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        } finally {
-            producer.flush();
-            producer.close();
+    public static Producer getInstance() {
+        if (kafkaProducer == null) {
+            init();
+            kafkaProducer = new KafkaProducer<> (PROPS);
         }
+        return INSTANCE;
+    }
+
+    private static void init() {
+        PROPS.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        PROPS.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        PROPS.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+    }
+
+    public void publish(String topicName, String message) {
+        ProducerRecord<String, String> record = new ProducerRecord<> (topicName, message);
+        kafkaProducer.send(record, (metadata, exception) -> {
+            if (exception != null) {
+                System.out.println("Exception Occurred!");
+                exception.printStackTrace();
+            }
+        });
+        System.out.println("Kafka Producing in topic: ... " + topicName + " => " + message);
+        kafkaProducer.flush();
     }
 }

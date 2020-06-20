@@ -1,6 +1,7 @@
 package kafka.chatting;
 
-import com.sun.tools.javac.util.List;
+import kafka.chatting.model.Message;
+import kafka.chatting.network.Server;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -8,42 +9,47 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.SubmissionPublisher;
 
-public class Consumer {
-    private static final String TOPIC_NAME = "chatting_message";
+public class Consumer implements Runnable {
+    private final String topicName; // chatting_message
     private static final long TIMEOUT = 1000L;  // 1 second
-    private Properties properties = new Properties();
+    private static final Properties PROPS = new Properties();
 
-    public Consumer() {
+    private Consumer(String topicName) {
+        this.topicName = topicName;
         init();
     }
 
     private void init() {
-        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-        properties.put(ConsumerConfig.GROUP_ID_CONFIG, TOPIC_NAME);
+        PROPS.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        PROPS.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        PROPS.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+        PROPS.put(ConsumerConfig.GROUP_ID_CONFIG, "chatting-app");
     }
 
+    @Override
     public void run() {
-        KafkaConsumer<String, String> consumer = new KafkaConsumer<> (properties);
-
-        try {
-            consumer.subscribe(List.of(TOPIC_NAME));
+        try (KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<> (PROPS)) {
+            kafkaConsumer.subscribe(List.of(topicName));
             while (true) {
-                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(TIMEOUT));
-                for (ConsumerRecord<String, String> record: records) {
+                ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.ofMillis(TIMEOUT));
+                for (ConsumerRecord<String, String> record : records) {
                     String message = record.value();
                     String key = record.key();
                     System.out.println(record);
                     System.out.println(key + ", " + message);
+                    Server.processReadMessage(Message.jsonToMessage(message));
                 }
             }
         } catch (Exception exception) {
             exception.printStackTrace();
-        } finally {
-            consumer.close();
         }
+    }
+
+    public static Consumer from(String topicName) {
+        return new Consumer(topicName);
     }
 }

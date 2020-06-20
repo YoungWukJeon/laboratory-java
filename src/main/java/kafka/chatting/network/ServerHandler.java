@@ -6,16 +6,25 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import kafka.chatting.KafkaAdminConnector;
+import kafka.chatting.KafkaAdminUtil;
 import kafka.chatting.MessageFactory;
+import kafka.chatting.Producer;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Flow.Subscription;
+import java.util.concurrent.Flow.Subscriber;
 import java.util.function.Predicate;
 
 public class ServerHandler extends SimpleChannelInboundHandler<String> {
-    private static final ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+    private final ChannelGroup channelGroup;
+
+    public ServerHandler(ChannelGroup channelGroup) {
+        this.channelGroup = channelGroup;
+    }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
@@ -78,24 +87,32 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         chatRoomNoes.forEach(chatRoomNo -> broadcast(MessageFactory.userLeaveServerMessage(user, chatRoomNo)));
     }
 
-    private void processReadMessage(Channel channel, Message message) {
-        Set<Integer> list = channel.attr(Server.CHAT_ROOM_NO).get();
+    public void processReadMessage(Channel channel, Message message) {
+        Set<Integer> chatRoomNoes = channel.attr(Server.CHAT_ROOM_NO).get();
 
         switch (message.getCommandType()) {
             case JOIN:
-                if (list == null) {
-                    list = new HashSet<> ();
-                    channel.attr(Server.CHAT_ROOM_NO).set(list);
+                if (!Server.isJoinedChatRoom(message.getChatRoomNo())) {
+                    KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), String.format(Server.TOPIC_NAME_FORMAT, message.getChatRoomNo()));
+                    Server.createChatRoomConsumer(message.getChatRoomNo());
                 }
-                list.add(message.getChatRoomNo());
-                broadcast(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
+                if (chatRoomNoes == null) {
+                    chatRoomNoes = new HashSet<> ();
+                    channel.attr(Server.CHAT_ROOM_NO).set(chatRoomNoes);
+                }
+                chatRoomNoes.add(message.getChatRoomNo());
+//                broadcast(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
+                Producer.getInstance().publish(String.format(Server.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
+                        MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
                 break;
             case LEAVE:
-                broadcast(MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()));
-                list.remove(message.getChatRoomNo());
+                Producer.getInstance().publish(String.format(Server.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
+                        MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
                 break;
             case NORMAL:
-                broadcast(MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()));
+//                broadcast(MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()));
+                Producer.getInstance().publish(String.format(Server.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
+                        MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()).toJsonString());
                 break;
             default:
                 System.out.println("Command Not Found");
@@ -116,4 +133,29 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
     private void writeMessage(Channel channel, Message message) {
         channel.writeAndFlush(message.toJsonString());
     }
+
+//    @Override
+//    public void onSubscribe(Subscription subscription) {
+//        this.subscription = subscription;
+//        subscription.request(1L);
+//    }
+//
+//    @Override
+//    public void onNext(Message message) {
+//        System.out.println("onNext(ServerHandler) -> " + message);
+//        processReadMessage(message);
+//        subscription.request(1L);
+//    }
+//
+//    @Override
+//    public void onError(Throwable throwable) {
+//        System.err.println(throwable.getMessage());
+//        subscription.cancel();
+//    }
+//
+//    @Override
+//    public void onComplete() {
+//        System.out.println("Done!(ServerHandler)");
+//        subscription.cancel();
+//    }
 }

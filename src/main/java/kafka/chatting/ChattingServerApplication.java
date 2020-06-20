@@ -8,6 +8,12 @@ import kafka.chatting.network.Server;
 //  현재 서버에 연결된 클라이언트 수 반환 해주는 부분 추가
 public class ChattingServerApplication {
     public static void main(String[] args) {
+//        KafkaAdminConnector kafkaAdminConnector = KafkaAdminConnector.from();
+        KafkaAdminUtil.getTopics(KafkaAdminConnector.getInstance().getAdminClient())
+                .stream()
+                .filter(s -> s.startsWith(Server.TOPIC_PREFIX))
+                .forEach(s -> Server.createChatRoomConsumer(Integer.parseInt(s.split("_")[2]))); // 토픽에 대응하는 Consumer 실행
+
         Server server = new Server();
         System.out.println("ChattingServer is running.");
         server.run();
