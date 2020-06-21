@@ -1,4 +1,4 @@
-package kafka.chatting;
+package kafka.chatting.utility;
 
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;

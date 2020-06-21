@@ -1,4 +1,4 @@
-package kafka.chatting;
+package kafka.chatting.server.middleware;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.ListTopicsResult;

@@ -1,7 +1,7 @@
-package kafka.chatting;
+package kafka.chatting.server.middleware;
 
 import kafka.chatting.model.Message;
-import kafka.chatting.network.Server;
+import kafka.chatting.server.network.Server;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -11,7 +11,6 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.SubmissionPublisher;
 
 public class Consumer implements Runnable {
     private final String topicName; // chatting_message

@@ -1,7 +1,7 @@
-package kafka.chatting;
+package kafka.chatting.client;
 
-import kafka.chatting.network.Client;
-import kafka.chatting.ui.chatroom_list.ChatRoomListFrame;
+import kafka.chatting.client.network.Client;
+import kafka.chatting.client.ui.chatroom_list.ChatRoomListFrame;
 
 import java.util.concurrent.CompletableFuture;
 

@@ -1,9 +1,9 @@
-package kafka.chatting.ui.chatroom_list;
+package kafka.chatting.client.ui.chatroom_list;
 
-import kafka.chatting.MessageFactory;
+import kafka.chatting.utility.MessageFactory;
 import kafka.chatting.model.ChatRoomInfo;
-import kafka.chatting.network.Client;
-import kafka.chatting.ui.chatting.ChattingDialog;
+import kafka.chatting.client.network.Client;
+import kafka.chatting.client.ui.chatting.ChattingDialog;
 
 import java.awt.*;
 import java.awt.event.*;

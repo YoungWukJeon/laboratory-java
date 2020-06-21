@@ -1,6 +1,8 @@
-package kafka.chatting;
+package kafka.chatting.server;
 
-import kafka.chatting.network.Server;
+import kafka.chatting.server.middleware.KafkaAdminConnector;
+import kafka.chatting.server.middleware.KafkaAdminUtil;
+import kafka.chatting.server.network.Server;
 
 // TODO: 2020-04-28 TODO: 2020-04-28 외부에서 서버의 실행 포트를 설정할 수 있게 변경해야 함.
 //  build.gradle에서 이 클래스만 실행할 수 있는 jar 생성

@@ -1,14 +1,12 @@
-package kafka.chatting.ui.chatroom_list;
+package kafka.chatting.client.ui.chatroom_list;
 
 import kafka.chatting.model.Message;
-import kafka.chatting.network.Client;
+import kafka.chatting.client.network.Client;
 
 import java.awt.*;
-import java.awt.event.*;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
 import javax.swing.*;
-import javax.swing.event.*;
 
 public class ChatRoomListFrame extends JFrame implements Subscriber<Message> {
     private final ChatRoomListPanel chatRoomListPanel = new ChatRoomListPanel(new BorderLayout());

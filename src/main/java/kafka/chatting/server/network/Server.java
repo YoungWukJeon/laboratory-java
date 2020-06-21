@@ -1,4 +1,4 @@
-package kafka.chatting.network;
+package kafka.chatting.server.network;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -12,8 +12,7 @@ import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import kafka.chatting.Consumer;
-import kafka.chatting.MessageFactory;
+import kafka.chatting.server.middleware.Consumer;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 

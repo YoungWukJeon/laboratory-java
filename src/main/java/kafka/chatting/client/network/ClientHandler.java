@@ -1,8 +1,9 @@
-package kafka.chatting.network;
+package kafka.chatting.client.network;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import kafka.chatting.model.Message;
+import kafka.chatting.server.network.Server;
 
 public class ClientHandler extends SimpleChannelInboundHandler<String> {
 

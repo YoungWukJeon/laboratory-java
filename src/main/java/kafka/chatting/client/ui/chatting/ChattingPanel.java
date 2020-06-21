@@ -1,7 +1,7 @@
-package kafka.chatting.ui.chatting;
+package kafka.chatting.client.ui.chatting;
 
 import kafka.chatting.model.Message;
-import kafka.chatting.network.Client;
+import kafka.chatting.client.network.Client;
 
 import java.awt.*;
 import java.time.format.DateTimeFormatter;

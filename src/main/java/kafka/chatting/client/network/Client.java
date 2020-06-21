@@ -1,4 +1,4 @@
-package kafka.chatting.network;
+package kafka.chatting.client.network;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;

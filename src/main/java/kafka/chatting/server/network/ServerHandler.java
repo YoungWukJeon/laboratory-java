@@ -1,22 +1,18 @@
-package kafka.chatting.network;
+package kafka.chatting.server.network;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.util.concurrent.GlobalEventExecutor;
-import kafka.chatting.KafkaAdminConnector;
-import kafka.chatting.KafkaAdminUtil;
-import kafka.chatting.MessageFactory;
-import kafka.chatting.Producer;
+import kafka.chatting.server.middleware.KafkaAdminConnector;
+import kafka.chatting.server.middleware.KafkaAdminUtil;
+import kafka.chatting.utility.MessageFactory;
+import kafka.chatting.server.middleware.Producer;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Flow.Subscription;
-import java.util.concurrent.Flow.Subscriber;
 import java.util.function.Predicate;
 
 public class ServerHandler extends SimpleChannelInboundHandler<String> {
