@@ -4,9 +4,17 @@ import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class MessageFactory {
     private MessageFactory() {}
+
+    public static Message chatRoomListClientMessage() {
+        return Message.builder()
+                .messageType(Message.MessageType.CLIENT)
+                .commandType(Message.CommandType.GET_CHAT_ROOM_LIST)
+                .build();
+    }
 
     public static Message normalClientMessage(User user, int chatRoomNo, String message) {
         return Message.builder()
@@ -52,6 +60,15 @@ public class MessageFactory {
                 .messageType(Message.MessageType.SERVER)
                 .commandType(Message.CommandType.SET_USER)
                 .user(user)
+                .time(LocalDateTime.now())
+                .build();
+    }
+
+    public static Message clientGetChatRoomListServerMessage(String message) {
+        return Message.builder()
+                .messageType(Message.MessageType.SERVER)
+                .commandType(Message.CommandType.GET_CHAT_ROOM_LIST)
+                .message(message)
                 .time(LocalDateTime.now())
                 .build();
     }

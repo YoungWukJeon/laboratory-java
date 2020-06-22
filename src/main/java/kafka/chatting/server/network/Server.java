@@ -17,6 +17,7 @@ import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -85,6 +86,10 @@ public class Server {
         return CHAT_ROOM_MAP.containsKey(no);
     }
 
+    public static Set<Integer> getChatRooms() {
+        return CHAT_ROOM_MAP.keySet();
+    }
+
     public static void processReadMessage(Message message) {
         switch (message.getCommandType()) {
             case JOIN:
@@ -106,9 +111,9 @@ public class Server {
     private static void broadcast(Message message) {
         System.out.println("Server broadcast > " + message);
         channelGroup.stream()
-                .filter(Predicate.not(
-                        channel -> message.getCommandType() == Message.CommandType.JOIN
-                                && channel.attr(Server.USER).get().equals(message.getUser())))
+//                .filter(Predicate.not(
+//                        channel -> message.getCommandType() == Message.CommandType.JOIN
+//                                && channel.attr(Server.USER).get().equals(message.getUser())))
                 .filter(channel -> channel.attr(Server.CHAT_ROOM_NO).get() != null
                         && channel.attr(Server.CHAT_ROOM_NO).get().contains(message.getChatRoomNo()))
                 .forEach(channel -> writeMessage(channel, message));

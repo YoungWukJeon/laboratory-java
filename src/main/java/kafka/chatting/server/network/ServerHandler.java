@@ -14,6 +14,7 @@ import kafka.chatting.model.User;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class ServerHandler extends SimpleChannelInboundHandler<String> {
     private final ChannelGroup channelGroup;
@@ -87,6 +88,12 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         Set<Integer> chatRoomNoes = channel.attr(Server.CHAT_ROOM_NO).get();
 
         switch (message.getCommandType()) {
+            case GET_CHAT_ROOM_LIST:
+                writeMessage(channel, MessageFactory.clientGetChatRoomListServerMessage(
+                        Server.getChatRooms().stream()
+                                .map(Object::toString)
+                                .collect(Collectors.joining(" "))));
+                break;
             case JOIN:
                 if (!Server.isJoinedChatRoom(message.getChatRoomNo())) {
                     KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), String.format(Server.TOPIC_NAME_FORMAT, message.getChatRoomNo()));
@@ -129,29 +136,4 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
     private void writeMessage(Channel channel, Message message) {
         channel.writeAndFlush(message.toJsonString());
     }
-
-//    @Override
-//    public void onSubscribe(Subscription subscription) {
-//        this.subscription = subscription;
-//        subscription.request(1L);
-//    }
-//
-//    @Override
-//    public void onNext(Message message) {
-//        System.out.println("onNext(ServerHandler) -> " + message);
-//        processReadMessage(message);
-//        subscription.request(1L);
-//    }
-//
-//    @Override
-//    public void onError(Throwable throwable) {
-//        System.err.println(throwable.getMessage());
-//        subscription.cancel();
-//    }
-//
-//    @Override
-//    public void onComplete() {
-//        System.out.println("Done!(ServerHandler)");
-//        subscription.cancel();
-//    }
 }
