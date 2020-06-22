@@ -1,7 +1,7 @@
 package kafka.chatting.client.ui.chatting;
 
+import kafka.chatting.client.ClientInstance;
 import kafka.chatting.model.Message;
-import kafka.chatting.client.network.Client;
 
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
@@ -58,7 +58,7 @@ public class ChattingPanel extends JPanel {
 
     private void addClientMessage(Message message) {
         if (message.getCommandType() == Message.CommandType.NORMAL) {
-            if (Client.getInstance().getUser().equals(message.getUser())) {
+            if (ClientInstance.getInstance().getUser().equals(message.getUser())) {
                 ChattingTextStyle.adjustMyTimeTextStyle(style);
                 addText("[" + message.getTime().format(DateTimeFormatter.ofPattern(("[yyyy-MM-dd hh:mm]"))) + "]\n");
                 ChattingTextStyle.adjustMyMessageTextStyle(style);

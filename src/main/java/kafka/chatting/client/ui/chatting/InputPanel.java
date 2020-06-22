@@ -1,9 +1,9 @@
 package kafka.chatting.client.ui.chatting;
 
+import kafka.chatting.client.ClientInstance;
 import kafka.chatting.utility.MessageFactory;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
-import kafka.chatting.client.network.Client;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -35,9 +35,9 @@ public class InputPanel extends JPanel {
         this.add(textField);
     }
 
-    private void sendText(final String text) {
+    private void sendText(String text) {
         if (text.length() > 0) {
-            final User user = Client.getInstance().getUser();
+            final User user = ClientInstance.getInstance().getUser();
             final Message message;
 
             if (LEAVE_CHAT_ROOM.equals(text)) {
@@ -45,8 +45,7 @@ public class InputPanel extends JPanel {
             } else {
                 message = MessageFactory.normalClientMessage(user, chatRoomNo, text);
             }
-
-            Client.getInstance().send(message);
+            ClientInstance.getInstance().send(message);
         }
     }
 }

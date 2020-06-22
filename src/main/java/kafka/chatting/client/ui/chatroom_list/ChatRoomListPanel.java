@@ -1,8 +1,10 @@
 package kafka.chatting.client.ui.chatroom_list;
 
+import kafka.chatting.client.ClientInstance;
+import kafka.chatting.client.flow.MessageSubscriber;
+import kafka.chatting.model.Message;
 import kafka.chatting.utility.MessageFactory;
 import kafka.chatting.model.ChatRoomInfo;
-import kafka.chatting.client.network.Client;
 import kafka.chatting.client.ui.chatting.ChattingDialog;
 
 import java.awt.*;
@@ -11,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Flow.Subscriber;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -21,9 +24,11 @@ public class ChatRoomListPanel extends JPanel {
     private final List<ChatRoomInfo> chatRoomInfoList = new ArrayList<> ();
     private final Map<Integer, ChattingDialog> chattingDialogMap = new HashMap<> ();
     private JTable chatRoomListTable;
+    private final Subscriber<Message> messageSubscriber = new MessageSubscriber((this::processReceivedMessage));
 
     public ChatRoomListPanel(LayoutManager layoutManager) {
         super(layoutManager);
+        ClientInstance.getInstance().subscribe(messageSubscriber);
 
         chatRoomInfoList.add(ChatRoomInfo.from(1, "test1", false));
         chatRoomInfoList.add(ChatRoomInfo.from(2, "test1", true));
@@ -105,19 +110,21 @@ public class ChatRoomListPanel extends JPanel {
                     final int row = chatRoomListTable.rowAtPoint(e.getPoint());
                     final Integer chatRoomNo = (Integer) chatRoomListTable.getValueAt(row, 0);
 
-                    if (!Client.getInstance().isJoinedChatRoomNo(chatRoomNo)) {
-                        Client.getInstance().addChatRoomNo(chatRoomNo);
-                        Client.getInstance().send(MessageFactory.userJoinClientMessage(Client.getInstance().getUser(), chatRoomNo));
+                    if (!ClientInstance.getInstance().isJoinedChatRoomNo(chatRoomNo)) {
+                        ClientInstance.getInstance().addChatRoomNo(chatRoomNo);
+                        ClientInstance.getInstance()
+                                .send(MessageFactory.userJoinClientMessage(ClientInstance.getInstance().getUser(), chatRoomNo));
                     }
 
                     System.out.println((row + 1) + " 번째가 더블 클릭됨");
-                    ChattingDialog chattingDialog = new ChattingDialog(chatRoomNo, Client.getInstance().getMessagesInChatRoomNo(chatRoomNo));
+                    ChattingDialog chattingDialog =
+                            new ChattingDialog(chatRoomNo, ClientInstance.getInstance().getMessagesInChatRoomNo(chatRoomNo));
                     chattingDialog.addWindowListener(new WindowAdapter() {
                         @Override
                         public void windowClosed(WindowEvent e) {
                             System.out.println("ChattingDialog Closed");
                             chattingDialogMap.remove(chatRoomNo);
-                            chattingDialog.dismiss();
+//                            chattingDialog.dismiss();
                         }
                     });
                     chattingDialogMap.put(chatRoomNo, chattingDialog);
@@ -144,5 +151,9 @@ public class ChatRoomListPanel extends JPanel {
                 tableColumn.setCellRenderer(centerRender);
             }
         }
+    }
+
+    public void processReceivedMessage(Message message) {
+        System.out.println("onNext(ChatRoomListPanel) -> " + message);
     }
 }

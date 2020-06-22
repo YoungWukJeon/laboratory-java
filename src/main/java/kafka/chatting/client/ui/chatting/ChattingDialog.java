@@ -1,30 +1,30 @@
 package kafka.chatting.client.ui.chatting;
 
+import kafka.chatting.client.ClientInstance;
+import kafka.chatting.client.flow.MessageSubscriber;
 import kafka.chatting.model.Message;
-import kafka.chatting.client.network.Client;
 
 import java.awt.*;
 import java.awt.event.*;
 import java.util.List;
 import java.util.concurrent.Flow.Subscriber;
-import java.util.concurrent.Flow.Subscription;
 import javax.swing.*;
 
-public class ChattingDialog extends JDialog implements Subscriber<Message> {
+public class ChattingDialog extends JDialog {
     private final ChattingPanel chattingPanel;
     private final JPanel inputPanel;
     private final Integer chatRoomNo;
-    private Subscription subscription;
+    private final Subscriber<Message> messageSubscriber = new MessageSubscriber((this::processReceivedMessage));
 
     public ChattingDialog(Integer chatRoomNo, List<Message> messages) {
         this.chatRoomNo = chatRoomNo;
         chattingPanel = new ChattingPanel(new BorderLayout(), messages);
         inputPanel = new InputPanel(new BorderLayout(), this.chatRoomNo);
-        init();
-        addComponent();
         chattingPanel.setBackground(new Color(178, 199, 217));
         inputPanel.setBackground(Color.BLUE);
-        Client.getInstance().subscribe(this);
+        init();
+        addComponent();
+        ClientInstance.getInstance().subscribe(messageSubscriber);
     }
 
     private void init() {
@@ -58,23 +58,12 @@ public class ChattingDialog extends JDialog implements Subscriber<Message> {
         this.add(inputPanel, BorderLayout.SOUTH);
     }
 
-    public void dismiss() {
-        onComplete();
-    }
-
-    @Override
-    public void onSubscribe(Subscription subscription) {
-        this.subscription = subscription;
-        subscription.request(1L);
-    }
-
-    @Override
-    public void onNext(Message message) {
+    private void processReceivedMessage(Message message) {
         System.out.println("onNext(ChattingDialog[" + chatRoomNo + "]) -> " + message);
         if (this.chatRoomNo.equals(message.getChatRoomNo())) {
             if (message.getMessageType() == Message.MessageType.SERVER
                     && message.getCommandType() == Message.CommandType.LEAVE
-                    && Client.getInstance().getUser().equals(message.getUser())) {
+                    && ClientInstance.getInstance().getUser().equals(message.getUser())) {
                 this.dispose();
                 return;
             }
@@ -82,18 +71,9 @@ public class ChattingDialog extends JDialog implements Subscriber<Message> {
         } else {
             System.out.println("This message is not in chatRoomNo=" + chatRoomNo + "(message.chatRoomNo=" + message.getChatRoomNo()+ ")");
         }
-        subscription.request(1L);
     }
 
-    @Override
-    public void onError(Throwable throwable) {
-        System.err.println(throwable.getMessage());
-        subscription.cancel();
-    }
-
-    @Override
-    public void onComplete() {
-        System.out.println("Done!(ChattingDialog[" + chatRoomNo + "])");
-        subscription.cancel();
+    public void dismiss() {
+        messageSubscriber.onComplete();
     }
 }
