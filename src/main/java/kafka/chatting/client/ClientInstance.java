@@ -1,6 +1,7 @@
 package kafka.chatting.client;
 
 import kafka.chatting.client.network.Client;
+import kafka.chatting.model.ChatRoomInfo;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
@@ -18,6 +19,7 @@ public enum ClientInstance {
     private User user;
     private Client client;
     private final SubmissionPublisher<Message> messagePublisher = new SubmissionPublisher<> ();
+    private Set<ChatRoomInfo> chatRoomInfos = new HashSet<>();
     private final Set<Integer> joinChatRoomNos = new HashSet<>();
     private final List<Message> receivedMessages = new ArrayList<>();
 
@@ -35,6 +37,19 @@ public enum ClientInstance {
 
     public void setClient(Client client) {
         this.client = client;
+    }
+
+    public Set<ChatRoomInfo> getChatRoomInfos() {
+        return chatRoomInfos;
+    }
+
+    public void setChatRoomInfos(Set<ChatRoomInfo> chatRoomInfos) {
+        this.chatRoomInfos = chatRoomInfos;
+    }
+
+    public void changeChatRoomInfo(ChatRoomInfo chatRoomInfo) {
+        chatRoomInfos.removeIf(c -> c.getNo() == chatRoomInfo.getNo());
+        chatRoomInfos.add(chatRoomInfo);
     }
 
     public void addChatRoomNo(int chatRoomNo) {

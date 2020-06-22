@@ -19,4 +19,15 @@ public class ChatRoomInfo {
     public static ChatRoomInfo from(int no, String recent, boolean isPresent) {
         return new ChatRoomInfo(no, recent, isPresent);
     }
+
+    @Override
+    public boolean equals(Object object) {
+        ChatRoomInfo chatRoomInfo = (ChatRoomInfo) object;
+        return this.no == chatRoomInfo.no;
+    }
+
+    @Override
+    public int hashCode() {
+        return no;
+    }
 }
