@@ -1,7 +1,7 @@
 package kafka.chatting.server.middleware;
 
 import kafka.chatting.model.Message;
-import kafka.chatting.server.network.Server;
+import kafka.chatting.server.ServerInstance;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -36,11 +36,8 @@ public class Consumer implements Runnable {
             while (true) {
                 ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.ofMillis(TIMEOUT));
                 for (ConsumerRecord<String, String> record : records) {
-                    String message = record.value();
-                    String key = record.key();
                     System.out.println(record);
-                    System.out.println(key + ", " + message);
-                    Server.processReadMessage(Message.jsonToMessage(message));
+                    ServerInstance.getInstance().processReadMessage(Message.jsonToMessage(record.value()));
                 }
             }
         } catch (Exception exception) {

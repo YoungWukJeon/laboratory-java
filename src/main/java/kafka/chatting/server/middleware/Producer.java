@@ -7,18 +7,13 @@ import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.util.Properties;
 
-public enum Producer {
-    INSTANCE;
-
+public class Producer {
     private static final Properties PROPS = new Properties();
     private static KafkaProducer<String, String> kafkaProducer;
 
-    public static Producer getInstance() {
-        if (kafkaProducer == null) {
-            init();
-            kafkaProducer = new KafkaProducer<> (PROPS);
-        }
-        return INSTANCE;
+    public Producer() {
+        init();
+        kafkaProducer = new KafkaProducer<> (PROPS);
     }
 
     private static void init() {
