@@ -12,16 +12,10 @@ import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import kafka.chatting.server.middleware.Consumer;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Predicate;
 
 public class Server {
     public static final AttributeKey<User> USER = AttributeKey.newInstance("user");
@@ -30,11 +24,7 @@ public class Server {
     private EventLoopGroup parentGroup;
     private EventLoopGroup childGroup;
     private ServerBootstrap serverBootstrap;
-    private static final ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-
-    public static final String TOPIC_PREFIX = "chatting_room_";
-    public static final String TOPIC_NAME_FORMAT = TOPIC_PREFIX + "%02d";
-    private static final Map<Integer, Consumer> CHAT_ROOM_MAP = new HashMap<>();
+    private final ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
     public Server() {
         bootstrap();
@@ -74,41 +64,11 @@ public class Server {
         }
     }
 
-    public static void createChatRoomConsumer(int no) {
-        if (!isJoinedChatRoom(no)) {
-            Consumer consumer = Consumer.from(String.format(TOPIC_NAME_FORMAT, no));
-            CompletableFuture.runAsync(consumer);
-            CHAT_ROOM_MAP.put(no, consumer);
-        }
+    public void send(Channel channel, Message message) {
+        writeMessage(channel, message);
     }
 
-    public static boolean isJoinedChatRoom(int no) {
-        return CHAT_ROOM_MAP.containsKey(no);
-    }
-
-    public static Set<Integer> getChatRooms() {
-        return CHAT_ROOM_MAP.keySet();
-    }
-
-    public static void processReadMessage(Message message) {
-        switch (message.getCommandType()) {
-            case JOIN:
-//                broadcast(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
-//                break;
-            case LEAVE:
-//                broadcast(MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()));
-//                break;
-            case NORMAL:
-//                broadcast(MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()));
-//                break;
-                broadcast(message);
-                break;
-            default:
-                System.out.println("Command Not Found");
-        }
-    }
-
-    private static void broadcast(Message message) {
+    public void broadcast(Message message) {
         System.out.println("Server broadcast > " + message);
         channelGroup.stream()
 //                .filter(Predicate.not(
@@ -119,7 +79,7 @@ public class Server {
                 .forEach(channel -> writeMessage(channel, message));
     }
 
-    private static void writeMessage(Channel channel, Message message) {
+    private void writeMessage(Channel channel, Message message) {
         channel.writeAndFlush(message.toJsonString());
     }
 }

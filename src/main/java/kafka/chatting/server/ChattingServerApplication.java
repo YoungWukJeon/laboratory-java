@@ -1,7 +1,5 @@
 package kafka.chatting.server;
 
-import kafka.chatting.server.middleware.KafkaAdminConnector;
-import kafka.chatting.server.middleware.KafkaAdminUtil;
 import kafka.chatting.server.network.Server;
 
 // TODO: 2020-04-28 TODO: 2020-04-28 외부에서 서버의 실행 포트를 설정할 수 있게 변경해야 함.
@@ -10,13 +8,10 @@ import kafka.chatting.server.network.Server;
 //  현재 서버에 연결된 클라이언트 수 반환 해주는 부분 추가
 public class ChattingServerApplication {
     public static void main(String[] args) {
-//        KafkaAdminConnector kafkaAdminConnector = KafkaAdminConnector.from();
-        KafkaAdminUtil.getTopics(KafkaAdminConnector.getInstance().getAdminClient())
-                .stream()
-                .filter(s -> s.startsWith(Server.TOPIC_PREFIX))
-                .forEach(s -> Server.createChatRoomConsumer(Integer.parseInt(s.split("_")[2]))); // 토픽에 대응하는 Consumer 실행
-
         Server server = new Server();
+        ServerInstance.getInstance().createConsumers();
+        ServerInstance.getInstance().setServer(server);
+
         System.out.println("ChattingServer is running.");
         server.run();
         System.out.println("ChattingServer has been shut down.");

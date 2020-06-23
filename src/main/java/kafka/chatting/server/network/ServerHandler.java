@@ -4,6 +4,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
+import kafka.chatting.server.ServerInstance;
 import kafka.chatting.server.middleware.KafkaAdminConnector;
 import kafka.chatting.server.middleware.KafkaAdminUtil;
 import kafka.chatting.utility.MessageFactory;
@@ -31,7 +32,8 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         System.out.println(user + " has joined.");
 
         // 추가된 사용자에게 유저 정보 전달
-        writeMessage(incoming, MessageFactory.clientSetUserServerMessage(user));
+        ServerInstance.getInstance().send(incoming, MessageFactory.clientSetUserServerMessage(user));
+//        writeMessage(incoming, MessageFactory.clientSetUserServerMessage(user));
         // 사용자가 추가되었을 때 기존 사용자에게 알림
 //        broadcast(Message.joinMessage(user).toJsonString());
         channelGroup.add(incoming);
@@ -81,7 +83,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         System.err.println("current channel count: " + (channelGroup.size()));
         cause.printStackTrace();
 
-        chatRoomNoes.forEach(chatRoomNo -> broadcast(MessageFactory.userLeaveServerMessage(user, chatRoomNo)));
+        chatRoomNoes.forEach(chatRoomNo -> ServerInstance.getInstance().broadcast(MessageFactory.userLeaveServerMessage(user, chatRoomNo)));
     }
 
     public void processReadMessage(Channel channel, Message message) {
@@ -89,15 +91,20 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
 
         switch (message.getCommandType()) {
             case GET_CHAT_ROOM_LIST:
-                writeMessage(channel, MessageFactory.clientGetChatRoomListServerMessage(
-                        Server.getChatRooms().stream()
-                                .map(Object::toString)
-                                .collect(Collectors.joining(" "))));
+                ServerInstance.getInstance().send(channel,
+                        MessageFactory.clientGetChatRoomListServerMessage(
+                                ServerInstance.getInstance().getChatRooms().stream()
+                                        .map(Object::toString)
+                                        .collect(Collectors.joining(" "))));
+//                writeMessage(channel, MessageFactory.clientGetChatRoomListServerMessage(
+//                        Server.getChatRooms().stream()
+//                                .map(Object::toString)
+//                                .collect(Collectors.joining(" "))));
                 break;
             case JOIN:
-                if (!Server.isJoinedChatRoom(message.getChatRoomNo())) {
-                    KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), String.format(Server.TOPIC_NAME_FORMAT, message.getChatRoomNo()));
-                    Server.createChatRoomConsumer(message.getChatRoomNo());
+                if (!ServerInstance.getInstance().isJoinedChatRoom(message.getChatRoomNo())) {
+                    KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()));
+                    ServerInstance.getInstance().createChatRoomConsumer(message.getChatRoomNo());
                 }
                 if (chatRoomNoes == null) {
                     chatRoomNoes = new HashSet<> ();
@@ -105,16 +112,16 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
                 }
                 chatRoomNoes.add(message.getChatRoomNo());
 //                broadcast(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
-                Producer.getInstance().publish(String.format(Server.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
+                ServerInstance.getInstance().publish(String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
                         MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
                 break;
             case LEAVE:
-                Producer.getInstance().publish(String.format(Server.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
+                ServerInstance.getInstance().publish(String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
                         MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
                 break;
             case NORMAL:
 //                broadcast(MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()));
-                Producer.getInstance().publish(String.format(Server.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
+                ServerInstance.getInstance().publish(String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
                         MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()).toJsonString());
                 break;
             default:
@@ -122,18 +129,18 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         }
     }
 
-    private void broadcast(Message message) {
-        System.out.println("Server broadcast > " + message);
-        channelGroup.stream()
-                .filter(Predicate.not(
-                        channel -> message.getCommandType() == Message.CommandType.JOIN
-                                && channel.attr(Server.USER).get().equals(message.getUser())))
-                .filter(channel -> channel.attr(Server.CHAT_ROOM_NO).get() != null
-                        && channel.attr(Server.CHAT_ROOM_NO).get().contains(message.getChatRoomNo()))
-                .forEach(channel -> writeMessage(channel, message));
-    }
+//    private void broadcast(Message message) {
+//        System.out.println("Server broadcast > " + message);
+//        channelGroup.stream()
+//                .filter(Predicate.not(
+//                        channel -> message.getCommandType() == Message.CommandType.JOIN
+//                                && channel.attr(Server.USER).get().equals(message.getUser())))
+//                .filter(channel -> channel.attr(Server.CHAT_ROOM_NO).get() != null
+//                        && channel.attr(Server.CHAT_ROOM_NO).get().contains(message.getChatRoomNo()))
+//                .forEach(channel -> writeMessage(channel, message));
+//    }
 
-    private void writeMessage(Channel channel, Message message) {
-        channel.writeAndFlush(message.toJsonString());
-    }
+//    private void writeMessage(Channel channel, Message message) {
+//        channel.writeAndFlush(message.toJsonString());
+//    }
 }
