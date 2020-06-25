@@ -8,13 +8,11 @@ import kafka.chatting.server.ServerInstance;
 import kafka.chatting.server.middleware.KafkaAdminConnector;
 import kafka.chatting.server.middleware.KafkaAdminUtil;
 import kafka.chatting.utility.MessageFactory;
-import kafka.chatting.server.middleware.Producer;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ServerHandler extends SimpleChannelInboundHandler<String> {
@@ -33,17 +31,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
 
         // 추가된 사용자에게 유저 정보 전달
         ServerInstance.getInstance().send(incoming, MessageFactory.clientSetUserServerMessage(user));
-//        writeMessage(incoming, MessageFactory.clientSetUserServerMessage(user));
-        // 사용자가 추가되었을 때 기존 사용자에게 알림
-//        broadcast(Message.joinMessage(user).toJsonString());
         channelGroup.add(incoming);
-    }
-
-    @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String msg) {
-        final Message message = Message.jsonToMessage(msg);
-        System.out.println("Server received > " + message);
-        processReadMessage(ctx.channel(), message);
     }
 
     @Override
@@ -52,6 +40,13 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         Channel incoming = ctx.channel();
         User user = incoming.attr(Server.USER).get();
         System.out.println(user + " is online.");
+    }
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, String msg) {
+        final Message message = Message.jsonToMessage(msg);
+        System.out.println("Server received > " + message);
+        processReadMessage(ctx.channel(), message);
     }
 
     @Override
@@ -68,8 +63,6 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         User user = incoming.attr(Server.USER).get();
         System.out.println(user + " has left.");
 
-        // 사용자가 나갔을 때 기존 사용자에게 알림
-//        broadcast(Message.leaveMessage(user).toJsonString());
         channelGroup.remove(incoming);
     }
 
@@ -83,64 +76,72 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         System.err.println("current channel count: " + (channelGroup.size()));
         cause.printStackTrace();
 
-        chatRoomNoes.forEach(chatRoomNo -> ServerInstance.getInstance().broadcast(MessageFactory.userLeaveServerMessage(user, chatRoomNo)));
+        chatRoomNoes.forEach(chatRoomNo -> processLeaveRequest(MessageFactory.userLeaveServerMessage(user, chatRoomNo)));
+//        chatRoomNoes.forEach(chatRoomNo ->
+//                ServerInstance.getInstance().broadcast(MessageFactory.userLeaveServerMessage(user, chatRoomNo)));
     }
 
     public void processReadMessage(Channel channel, Message message) {
-        Set<Integer> chatRoomNoes = channel.attr(Server.CHAT_ROOM_NO).get();
-
         switch (message.getCommandType()) {
             case GET_CHAT_ROOM_LIST:
-                ServerInstance.getInstance().send(channel,
-                        MessageFactory.clientGetChatRoomListServerMessage(
-                                ServerInstance.getInstance().getChatRooms().stream()
-                                        .map(Object::toString)
-                                        .collect(Collectors.joining(" "))));
-//                writeMessage(channel, MessageFactory.clientGetChatRoomListServerMessage(
-//                        Server.getChatRooms().stream()
-//                                .map(Object::toString)
-//                                .collect(Collectors.joining(" "))));
-                break;
+                processGetChatRoomListRequest(channel);
+                return;
             case JOIN:
-                if (!ServerInstance.getInstance().isJoinedChatRoom(message.getChatRoomNo())) {
-                    KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()));
-                    ServerInstance.getInstance().createChatRoomConsumer(message.getChatRoomNo());
-                }
-                if (chatRoomNoes == null) {
-                    chatRoomNoes = new HashSet<> ();
-                    channel.attr(Server.CHAT_ROOM_NO).set(chatRoomNoes);
-                }
-                chatRoomNoes.add(message.getChatRoomNo());
-//                broadcast(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
-                ServerInstance.getInstance().publish(String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
-                        MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
-                break;
+                processJoinRequest(channel, message);
+                return;
             case LEAVE:
-                ServerInstance.getInstance().publish(String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
-                        MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
-                break;
+                processLeaveRequest(message);
+                return;
             case NORMAL:
-//                broadcast(MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()));
-                ServerInstance.getInstance().publish(String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
-                        MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()).toJsonString());
-                break;
+                processNormalRequest(message);
+                return;
             default:
                 System.out.println("Command Not Found");
         }
     }
 
-//    private void broadcast(Message message) {
-//        System.out.println("Server broadcast > " + message);
-//        channelGroup.stream()
-//                .filter(Predicate.not(
-//                        channel -> message.getCommandType() == Message.CommandType.JOIN
-//                                && channel.attr(Server.USER).get().equals(message.getUser())))
-//                .filter(channel -> channel.attr(Server.CHAT_ROOM_NO).get() != null
-//                        && channel.attr(Server.CHAT_ROOM_NO).get().contains(message.getChatRoomNo()))
-//                .forEach(channel -> writeMessage(channel, message));
-//    }
+    private void processGetChatRoomListRequest(Channel channel) {
+        ServerInstance.getInstance().send(channel,
+                MessageFactory.clientGetChatRoomListServerMessage(
+                        ServerInstance.getInstance().getChatRooms().stream()
+                                .map(Object::toString)
+                                .collect(Collectors.joining(" "))));
+    }
 
-//    private void writeMessage(Channel channel, Message message) {
-//        channel.writeAndFlush(message.toJsonString());
-//    }
+    private void processJoinRequest(Channel channel, Message message) {
+        Set<Integer> chatRoomNoes = channel.attr(Server.CHAT_ROOM_NO).get();
+
+        if (!ServerInstance.getInstance().isJoinedChatRoom(message.getChatRoomNo())) {
+            String topicName = String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo());
+            KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), topicName);
+            ServerInstance.getInstance().createChatRoomConsumer(message.getChatRoomNo());
+        }
+
+        if (chatRoomNoes == null) {
+            chatRoomNoes = new HashSet<> ();
+            channel.attr(Server.CHAT_ROOM_NO).set(chatRoomNoes);
+        }
+        chatRoomNoes.add(message.getChatRoomNo());
+
+        publish(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
+//        ServerInstance.getInstance().publish(String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
+//                MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
+    }
+
+    private void processLeaveRequest(Message message) {
+        publish(MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()));
+//        ServerInstance.getInstance().publish(String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
+//                MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
+    }
+
+    private void processNormalRequest(Message message) {
+        publish(MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()));
+//        ServerInstance.getInstance().publish(String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
+//                MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()).toJsonString());
+    }
+
+    private void publish(Message message) {
+        String topicName = String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo());
+        ServerInstance.getInstance().publish(topicName, message.toJsonString());
+    }
 }
