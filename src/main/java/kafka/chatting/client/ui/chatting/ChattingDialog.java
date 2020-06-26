@@ -10,11 +10,12 @@ import java.util.List;
 import java.util.concurrent.Flow.Subscriber;
 import javax.swing.*;
 
+// TODO: 2020-06-27 processReceivedMessage 메서드 간소화
 public class ChattingDialog extends JDialog {
     private final ChattingPanel chattingPanel;
     private final JPanel inputPanel;
     private final Integer chatRoomNo;
-    private final Subscriber<Message> messageSubscriber = new MessageSubscriber((this::processReceivedMessage));
+    private final Subscriber<Message> messageSubscriber = new MessageSubscriber(this::processReceivedMessage);
 
     public ChattingDialog(Integer chatRoomNo, List<Message> messages) {
         this.chatRoomNo = chatRoomNo;
@@ -64,7 +65,7 @@ public class ChattingDialog extends JDialog {
             if (message.getMessageType() == Message.MessageType.SERVER
                     && message.getCommandType() == Message.CommandType.LEAVE
                     && ClientInstance.getInstance().getUser().equals(message.getUser())) {
-                this.dispose();
+                this.dismiss();
                 return;
             }
             chattingPanel.addMessageToTextPane(message);
@@ -75,5 +76,6 @@ public class ChattingDialog extends JDialog {
 
     public void dismiss() {
         messageSubscriber.onComplete();
+        this.dispose();
     }
 }

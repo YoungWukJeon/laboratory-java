@@ -49,6 +49,14 @@ public enum ServerInstance {
         return chatRooms.keySet();
     }
 
+    public int createChatRoomNo() {
+        int no = (int) (Math.random() * 100);
+        if (getChatRooms().contains(no)) {
+            return createChatRoomNo();
+        }
+        return no;
+    }
+
     public void processReadMessage(Message message) {
         switch (message.getCommandType()) {
             case JOIN:

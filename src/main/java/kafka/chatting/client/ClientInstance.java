@@ -5,10 +5,7 @@ import kafka.chatting.model.ChatRoomInfo;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
@@ -39,8 +36,10 @@ public enum ClientInstance {
         this.client = client;
     }
 
-    public Set<ChatRoomInfo> getChatRoomInfos() {
-        return chatRoomInfos;
+    public List<ChatRoomInfo> getChatRoomInfos() {
+        return chatRoomInfos.stream()
+                .sorted(Comparator.comparingInt(ChatRoomInfo::getNo))
+                .collect(Collectors.toList());
     }
 
     public void setChatRoomInfos(Set<ChatRoomInfo> chatRoomInfos) {

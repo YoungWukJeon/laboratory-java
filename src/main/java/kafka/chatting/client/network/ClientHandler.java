@@ -28,6 +28,9 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
             ClientInstance.getInstance().setUser(message.getUser());
             ClientInstance.getInstance().send(MessageFactory.chatRoomListClientMessage());
             return;
+        } else if (message.getCommandType() == Message.CommandType.CREATE_CHAT_ROOM) {
+            ClientInstance.getInstance().publishMessage(message);
+            return;
         } else if (message.getMessageType() == Message.MessageType.SERVER
                 && message.getCommandType() == Message.CommandType.LEAVE
                 && ClientInstance.getInstance().getUser().equals(message.getUser())) {

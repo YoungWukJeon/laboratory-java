@@ -19,7 +19,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 
-// TODO: 2020-06-23 최초에 목록 테이블 초기화될 때, 표 크기가 너무 많은거 수정(ui적으로) 
 public class ChatRoomListPanel extends JPanel {
     private final String[] headers = new String[] {"no", "recent", "present"};
     private final Map<Integer, ChattingDialog> chattingDialogMap = new HashMap<> ();
@@ -40,13 +39,13 @@ public class ChatRoomListPanel extends JPanel {
     }
 
     private Object[][] changeContent() {
-        final List<ChatRoomInfo> chatRoomInfoes = new ArrayList<> (ClientInstance.getInstance().getChatRoomInfos());
-        final Object[][] contents = new Object[chatRoomInfoes.size()][3];
+        final List<ChatRoomInfo> chatRoomInfos = ClientInstance.getInstance().getChatRoomInfos();
+        final Object[][] contents = new Object[chatRoomInfos.size()][3];
 
-        for (int i = 0; i < chatRoomInfoes.size(); i++) {
-            contents[i][0] = chatRoomInfoes.get(i).getNo();
-            contents[i][1] = chatRoomInfoes.get(i).isPresent()? chatRoomInfoes.get(i).getRecent(): "-";
-            contents[i][2] = chatRoomInfoes.get(i).isPresent()? "O": "X";
+        for (int i = 0; i < chatRoomInfos.size(); i++) {
+            contents[i][0] = chatRoomInfos.get(i).getNo();
+            contents[i][1] = chatRoomInfos.get(i).isPresent()? chatRoomInfos.get(i).getRecent(): "-";
+            contents[i][2] = chatRoomInfos.get(i).isPresent()? "O": "X";
         }
 
         return contents;
@@ -72,13 +71,10 @@ public class ChatRoomListPanel extends JPanel {
         chatRoomListTable.getTableHeader().setResizingAllowed(false);
         chatRoomListTable.getTableHeader().setFont(new Font("", Font.PLAIN, 14));
         setColumnHeaderWidth();
-//        chatRoomListTable.setShowGrid(false);
         chatRoomListTable.setColumnSelectionAllowed(false);
         chatRoomListTable.setFocusable(false);
         chatRoomListTable.setAutoCreateRowSorter(true);
-//        chatRoomListTable.isCellEditable(0, 0);
         chatRoomListTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-//        resizeColumnWidth();
         chatRoomListTable.setFont(new Font("", Font.PLAIN, 14));
         chatRoomListTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         chatRoomListTable.setRowHeight(21);
@@ -88,30 +84,37 @@ public class ChatRoomListPanel extends JPanel {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     final int row = chatRoomListTable.rowAtPoint(e.getPoint());
-                    final Integer chatRoomNo = (Integer) chatRoomListTable.getValueAt(row, 0);
-
-                    if (!ClientInstance.getInstance().isJoinedChatRoomNo(chatRoomNo)) {
-                        ClientInstance.getInstance().addChatRoomNo(chatRoomNo);
-                        ClientInstance.getInstance()
-                                .send(MessageFactory.userJoinClientMessage(ClientInstance.getInstance().getUser(), chatRoomNo));
-                    }
-
                     System.out.println((row + 1) + " 번째가 더블 클릭됨");
-                    ChattingDialog chattingDialog =
-                            new ChattingDialog(chatRoomNo, ClientInstance.getInstance().getMessagesInChatRoomNo(chatRoomNo));
-                    chattingDialog.addWindowListener(new WindowAdapter() {
-                        @Override
-                        public void windowClosed(WindowEvent e) {
-                            System.out.println("ChattingDialog Closed");
-                            chattingDialogMap.remove(chatRoomNo);
-                        }
-                    });
-                    chattingDialogMap.put(chatRoomNo, chattingDialog);
+                    final Integer chatRoomNo = (Integer) chatRoomListTable.getValueAt(row, 0);
+                    openChattingDialog(chatRoomNo);
                 }
             }
         });
-
         this.add(scrollPane);
+    }
+
+    private void openChattingDialog(int chatRoomNo) {
+        if (!ClientInstance.getInstance().isJoinedChatRoomNo(chatRoomNo)) {
+            ClientInstance.getInstance().addChatRoomNo(chatRoomNo);
+            ClientInstance.getInstance()
+                    .send(MessageFactory.userJoinClientMessage(ClientInstance.getInstance().getUser(), chatRoomNo));
+        }
+
+        if (chattingDialogMap.containsKey(chatRoomNo)) {
+            chattingDialogMap.get(chatRoomNo).requestFocus();
+            return;
+        }
+
+        ChattingDialog chattingDialog =
+                new ChattingDialog(chatRoomNo, ClientInstance.getInstance().getMessagesInChatRoomNo(chatRoomNo));
+        chattingDialog.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                System.out.println("ChattingDialog Closed");
+                chattingDialogMap.remove(chatRoomNo);
+            }
+        });
+        chattingDialogMap.put(chatRoomNo, chattingDialog);
     }
 
     private void setColumnHeaderWidth() {
@@ -123,7 +126,6 @@ public class ChatRoomListPanel extends JPanel {
 
         while (headerColumns.hasMoreElements()) {
             TableColumn tableColumn = headerColumns.nextElement();
-
             if (columnIndex == 0) {
                 tableColumn.setPreferredWidth(50);
                 tableColumn.setCellRenderer(centerRender);
@@ -156,36 +158,59 @@ public class ChatRoomListPanel extends JPanel {
     }
 
     public void processReceivedMessage(Message message) {
+        System.out.println("onNext(ChatRoomListPanel) -> " + message);
         switch (message.getCommandType()) {
             case GET_CHAT_ROOM_LIST:
-                ClientInstance.getInstance().setChatRoomInfos(
-                        Stream.of(message.getMessage().split(" "))
-                                .map(Integer::parseInt)
-                                .map(i -> ChatRoomInfo.from(i, "-", false))
-                                .collect(Collectors.toSet()
-                ));
-                defaultTableModel.setDataVector(changeContent(), headers);
-                break;
+                processGetChatRoomListResponse(message);
+                return;
+            case CREATE_CHAT_ROOM:
+                processCreateChatRoomResponse(message);
+                return;
             case JOIN:
-                if (ClientInstance.getInstance().getUser().equals(message.getUser())) {
-                    ClientInstance.getInstance().changeChatRoomInfo(ChatRoomInfo.from(message.getChatRoomNo(), "-", true));
-                    defaultTableModel.setDataVector(changeContent(), headers);
-                }
-                break;
+                processJoinAndLeaveResponse(message, true);
+                return;
             case LEAVE:
-                if (ClientInstance.getInstance().getUser().equals(message.getUser())) {
-                    ClientInstance.getInstance().changeChatRoomInfo(ChatRoomInfo.from(message.getChatRoomNo(), "-", false));
-                    defaultTableModel.setDataVector(changeContent(), headers);
-                }
-                break;
+                processJoinAndLeaveResponse(message, false);
+                return;
             case NORMAL:
-                if (ClientInstance.getInstance().isJoinedChatRoomNo(message.getChatRoomNo())) {
-                    ClientInstance.getInstance().changeChatRoomInfo(ChatRoomInfo.from(message.getChatRoomNo(), message.getMessage(), true));
-                    defaultTableModel.setDataVector(changeContent(), headers);
-                }
-                break;
+                processNormalResponse(message);
+                return;
+            default:
+                System.out.println("Command Not Found");
         }
-        System.out.println("onNext(ChatRoomListPanel) -> " + message);
+    }
+
+    private void processGetChatRoomListResponse(Message message) {
+        ClientInstance.getInstance().setChatRoomInfos(
+                Stream.of(message.getMessage().split(" "))
+                        .map(Integer::parseInt)
+                        .map(i -> ChatRoomInfo.from(i, "-", false))
+                        .collect(Collectors.toSet()));
+        defaultTableModel.setDataVector(changeContent(), headers);
+        resizeColumnWidth();
+    }
+
+    private void processCreateChatRoomResponse(Message message) {
+        changeChatRoomInfo(ChatRoomInfo.from(message.getChatRoomNo(), "-", true));
+
+        openChattingDialog(message.getChatRoomNo());
+    }
+
+    private void processJoinAndLeaveResponse(Message message, boolean isJoinResponse) {
+        if (ClientInstance.getInstance().getUser().equals(message.getUser())) {
+            changeChatRoomInfo(ChatRoomInfo.from(message.getChatRoomNo(), "-", isJoinResponse));
+        }
+    }
+
+    private void processNormalResponse(Message message) {
+        if (ClientInstance.getInstance().isJoinedChatRoomNo(message.getChatRoomNo())) {
+            changeChatRoomInfo(ChatRoomInfo.from(message.getChatRoomNo(), message.getMessage(), true));
+        }
+    }
+
+    private void changeChatRoomInfo(ChatRoomInfo chatRoomInfo) {
+        ClientInstance.getInstance().changeChatRoomInfo(chatRoomInfo);
+        defaultTableModel.setDataVector(changeContent(), headers);
         resizeColumnWidth();
     }
 }

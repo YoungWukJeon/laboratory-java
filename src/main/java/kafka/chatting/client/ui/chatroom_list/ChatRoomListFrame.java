@@ -1,5 +1,8 @@
 package kafka.chatting.client.ui.chatroom_list;
 
+import kafka.chatting.client.ClientInstance;
+import kafka.chatting.utility.MessageFactory;
+
 import java.awt.*;
 import javax.swing.*;
 
@@ -19,6 +22,7 @@ public class ChatRoomListFrame extends JFrame {
         createRoomButton.setFocusable(false);
         createRoomButton.addActionListener((event) -> {
             System.out.println("채팅 방 생성");
+            ClientInstance.getInstance().send(MessageFactory.createChatRoomClientMessage());
         });
 
         this.setSize(500, 500);

@@ -77,14 +77,15 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         cause.printStackTrace();
 
         chatRoomNoes.forEach(chatRoomNo -> processLeaveRequest(MessageFactory.userLeaveServerMessage(user, chatRoomNo)));
-//        chatRoomNoes.forEach(chatRoomNo ->
-//                ServerInstance.getInstance().broadcast(MessageFactory.userLeaveServerMessage(user, chatRoomNo)));
     }
 
     public void processReadMessage(Channel channel, Message message) {
         switch (message.getCommandType()) {
             case GET_CHAT_ROOM_LIST:
                 processGetChatRoomListRequest(channel);
+                return;
+            case CREATE_CHAT_ROOM:
+                processCreateChatRoom(channel);
                 return;
             case JOIN:
                 processJoinRequest(channel, message);
@@ -108,6 +109,12 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
                                 .collect(Collectors.joining(" "))));
     }
 
+    private void processCreateChatRoom(Channel channel) {
+        ServerInstance.getInstance().send(channel,
+                MessageFactory.clientCreateChatRoomServerMessage(
+                        ServerInstance.getInstance().createChatRoomNo()));
+    }
+
     private void processJoinRequest(Channel channel, Message message) {
         Set<Integer> chatRoomNoes = channel.attr(Server.CHAT_ROOM_NO).get();
 
@@ -124,20 +131,14 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         chatRoomNoes.add(message.getChatRoomNo());
 
         publish(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
-//        ServerInstance.getInstance().publish(String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
-//                MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
     }
 
     private void processLeaveRequest(Message message) {
         publish(MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()));
-//        ServerInstance.getInstance().publish(String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
-//                MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()).toJsonString());
     }
 
     private void processNormalRequest(Message message) {
         publish(MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()));
-//        ServerInstance.getInstance().publish(String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo()),
-//                MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()).toJsonString());
     }
 
     private void publish(Message message) {
