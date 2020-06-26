@@ -25,37 +25,11 @@ public class ChatRoomListPanel extends JPanel {
     private final Map<Integer, ChattingDialog> chattingDialogMap = new HashMap<> ();
     private JTable chatRoomListTable;
     private DefaultTableModel defaultTableModel;
-    private final Subscriber<Message> messageSubscriber = new MessageSubscriber((this::processReceivedMessage));
+    private final Subscriber<Message> messageSubscriber = new MessageSubscriber(this::processReceivedMessage);
 
     public ChatRoomListPanel(LayoutManager layoutManager) {
         super(layoutManager);
         ClientInstance.getInstance().subscribe(messageSubscriber);
-//        chatRoomInfoList.add(ChatRoomInfo.from(1, "test1", false));
-//        chatRoomInfoList.add(ChatRoomInfo.from(2, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(3, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(4, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(5, "test1", false));
-//        chatRoomInfoList.add(ChatRoomInfo.from(6, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(7, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(8, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(9, "test1", false));
-//        chatRoomInfoList.add(ChatRoomInfo.from(10, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(11, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(12, "test1", false));
-//        chatRoomInfoList.add(ChatRoomInfo.from(13, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(14, "test1", false));
-//        chatRoomInfoList.add(ChatRoomInfo.from(15, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(16, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(17, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(18, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(19, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(14, "test1", false));
-//        chatRoomInfoList.add(ChatRoomInfo.from(15, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(16, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(17, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(18, "test1", true));
-//        chatRoomInfoList.add(ChatRoomInfo.from(19, "test1", true));
-
         init();
         addComponent();
     }
@@ -66,13 +40,13 @@ public class ChatRoomListPanel extends JPanel {
     }
 
     private Object[][] changeContent() {
-        final List<ChatRoomInfo> chatRoomInfos = new ArrayList<> (ClientInstance.getInstance().getChatRoomInfos());
-        final Object[][] contents = new Object[chatRoomInfos.size()][3];
+        final List<ChatRoomInfo> chatRoomInfoes = new ArrayList<> (ClientInstance.getInstance().getChatRoomInfos());
+        final Object[][] contents = new Object[chatRoomInfoes.size()][3];
 
-        for (int i = 0; i < chatRoomInfos.size(); i++) {
-            contents[i][0] = chatRoomInfos.get(i).getNo();
-            contents[i][1] = chatRoomInfos.get(i).isPresent()? chatRoomInfos.get(i).getRecent(): "-";
-            contents[i][2] = chatRoomInfos.get(i).isPresent()? "O": "X";
+        for (int i = 0; i < chatRoomInfoes.size(); i++) {
+            contents[i][0] = chatRoomInfoes.get(i).getNo();
+            contents[i][1] = chatRoomInfoes.get(i).isPresent()? chatRoomInfoes.get(i).getRecent(): "-";
+            contents[i][2] = chatRoomInfoes.get(i).isPresent()? "O": "X";
         }
 
         return contents;
@@ -97,13 +71,14 @@ public class ChatRoomListPanel extends JPanel {
         chatRoomListTable.getTableHeader().setReorderingAllowed(false);
         chatRoomListTable.getTableHeader().setResizingAllowed(false);
         chatRoomListTable.getTableHeader().setFont(new Font("", Font.PLAIN, 14));
+        setColumnHeaderWidth();
 //        chatRoomListTable.setShowGrid(false);
         chatRoomListTable.setColumnSelectionAllowed(false);
         chatRoomListTable.setFocusable(false);
         chatRoomListTable.setAutoCreateRowSorter(true);
 //        chatRoomListTable.isCellEditable(0, 0);
         chatRoomListTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        resizeColumnWidth();
+//        resizeColumnWidth();
         chatRoomListTable.setFont(new Font("", Font.PLAIN, 14));
         chatRoomListTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         chatRoomListTable.setRowHeight(21);
@@ -137,6 +112,29 @@ public class ChatRoomListPanel extends JPanel {
         });
 
         this.add(scrollPane);
+    }
+
+    private void setColumnHeaderWidth() {
+        final DefaultTableCellRenderer centerRender = new DefaultTableCellRenderer();
+        centerRender.setHorizontalAlignment(SwingConstants.CENTER);
+
+        Enumeration<TableColumn> headerColumns = chatRoomListTable.getTableHeader().getColumnModel().getColumns();
+        int columnIndex = 0;
+
+        while (headerColumns.hasMoreElements()) {
+            TableColumn tableColumn = headerColumns.nextElement();
+
+            if (columnIndex == 0) {
+                tableColumn.setPreferredWidth(50);
+                tableColumn.setCellRenderer(centerRender);
+            } else if (columnIndex == 1) {
+                tableColumn.setPreferredWidth(333);
+            } else {
+                tableColumn.setPreferredWidth(100);
+                tableColumn.setCellRenderer(centerRender);
+            }
+            columnIndex++;
+        }
     }
 
     private void resizeColumnWidth() {
@@ -188,5 +186,6 @@ public class ChatRoomListPanel extends JPanel {
                 break;
         }
         System.out.println("onNext(ChatRoomListPanel) -> " + message);
+        resizeColumnWidth();
     }
 }
