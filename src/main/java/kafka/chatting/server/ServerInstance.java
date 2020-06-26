@@ -52,15 +52,9 @@ public enum ServerInstance {
     public void processReadMessage(Message message) {
         switch (message.getCommandType()) {
             case JOIN:
-//                broadcast(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
-//                break;
             case LEAVE:
-//                broadcast(MessageFactory.userLeaveServerMessage(message.getUser(), message.getChatRoomNo()));
-//                break;
             case NORMAL:
-//                broadcast(MessageFactory.normalClientMessage(message.getUser(), message.getChatRoomNo(), message.getMessage()));
-//                break;
-                server.broadcast(message);
+                broadcast(message);
                 break;
             default:
                 System.out.println("Command Not Found");
