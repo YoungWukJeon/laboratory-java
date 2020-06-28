@@ -16,18 +16,22 @@ import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public class Server {
     public static final AttributeKey<User> USER = AttributeKey.newInstance("user");
     public static final AttributeKey<Set<Integer>> CHAT_ROOM_NO = AttributeKey.newInstance("chat_room_no");
-    private static final int PORT = 8888;
+    private static final int DEFAULT_PORT = 8888;
+    private final int port;
     private EventLoopGroup parentGroup;
     private EventLoopGroup childGroup;
     private ServerBootstrap serverBootstrap;
     private final ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
-    public Server() {
+    public Server(String port) {
+        this.port = Integer.parseInt(Objects.requireNonNullElse(port, Integer.toString(DEFAULT_PORT)));
         bootstrap();
     }
 
@@ -50,9 +54,13 @@ public class Server {
         System.out.println("Server is ready to connect clients.");
     }
 
+    public int getPort() {
+        return port;
+    }
+
     public void run() {
         try {
-            serverBootstrap.bind(PORT)
+            serverBootstrap.bind(port)
                     .sync()
                     .channel()
                     .closeFuture()
@@ -72,6 +80,7 @@ public class Server {
     public void broadcast(Message message) {
         System.out.println("Server broadcast > " + message);
         channelGroup.stream()
+                .filter(Predicate.not(channel -> channel.attr(Server.CHAT_ROOM_NO).get() == null))
                 .filter(channel -> channel.attr(Server.CHAT_ROOM_NO).get().contains(message.getChatRoomNo()))
                 .forEach(channel -> writeMessage(channel, message));
     }

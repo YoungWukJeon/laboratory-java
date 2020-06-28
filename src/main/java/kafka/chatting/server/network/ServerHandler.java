@@ -118,7 +118,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         if (!ServerInstance.getInstance().isJoinedChatRoom(message.getChatRoomNo())) {
             String topicName = String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo());
             KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), topicName);
-            ServerInstance.getInstance().createChatRoomConsumer(message.getChatRoomNo());
+            ServerInstance.getInstance().createChatRoomConsumer(message.getChatRoomNo(), Integer.toString(ServerInstance.getInstance().getServerPort()));
         }
         publish(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
     }

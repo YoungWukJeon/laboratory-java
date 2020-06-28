@@ -14,11 +14,13 @@ import java.util.Properties;
 
 public class Consumer implements Runnable {
     private final String topicName; // chatting_message
+    private final String groupName; // Kafka Consumer Group
     private static final long TIMEOUT = 1000L;  // 1 second
     private static final Properties PROPS = new Properties();
 
-    private Consumer(String topicName) {
+    private Consumer(String topicName, String groupName) {
         this.topicName = topicName;
+        this.groupName = groupName;
         init();
     }
 
@@ -26,7 +28,7 @@ public class Consumer implements Runnable {
         PROPS.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         PROPS.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         PROPS.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-        PROPS.put(ConsumerConfig.GROUP_ID_CONFIG, "chatting-app");
+        PROPS.put(ConsumerConfig.GROUP_ID_CONFIG, "chatting-app-" + groupName);
     }
 
     @Override
@@ -45,7 +47,7 @@ public class Consumer implements Runnable {
         }
     }
 
-    public static Consumer from(String topicName) {
-        return new Consumer(topicName);
+    public static Consumer from(String topicName, String groupName) {
+        return new Consumer(topicName, groupName);
     }
 }

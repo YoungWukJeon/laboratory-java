@@ -33,9 +33,13 @@ public enum ServerInstance {
         this.server = server;
     }
 
-    public void createChatRoomConsumer(int no) {
+    public int getServerPort() {
+        return server.getPort();
+    }
+
+    public void createChatRoomConsumer(int no, String groupName) {
         if (!isJoinedChatRoom(no)) {
-            Consumer consumer = Consumer.from(String.format(TOPIC_NAME_FORMAT, no));
+            Consumer consumer = Consumer.from(String.format(TOPIC_NAME_FORMAT, no), groupName);
             CompletableFuture.runAsync(consumer);
             chatRooms.put(no, consumer);
         }
@@ -87,10 +91,10 @@ public enum ServerInstance {
         producer.publish(topicName, message);
     }
 
-    public void createConsumers() {
+    public void createConsumers(String groupName) {
         KafkaAdminUtil.getTopics(KafkaAdminConnector.getInstance().getAdminClient())
                 .stream()
                 .filter(s -> s.startsWith(ServerInstance.TOPIC_PREFIX))
-                .forEach(s -> createChatRoomConsumer(Integer.parseInt(s.split("_")[2]))); // 토픽에 대응하는 Consumer 실행
+                .forEach(s -> createChatRoomConsumer(Integer.parseInt(s.split("_")[2]), groupName)); // 토픽에 대응하는 Consumer 실행
     }
 }

@@ -10,14 +10,20 @@ import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 import kafka.chatting.model.Message;
 
+import java.util.Objects;
+
 public class Client {
-    private static final String HOST = "localhost";
-    private static final int PORT = 8888;
+    private static final String DEFAULT_HOST = "localhost";
+    private static final int DEFAULT_PORT = 8888;
+    private final String host;
+    private final int port;
     private EventLoopGroup group;
     private Bootstrap bootstrap;
     private Channel channel;
 
-    public Client() {
+    public Client(String host, String port) {
+        this.host = Objects.requireNonNullElse(host, DEFAULT_HOST);
+        this.port = Integer.parseInt(Objects.requireNonNullElse(port, Integer.toString(DEFAULT_PORT)));
         bootstrap();
     }
 
@@ -39,7 +45,7 @@ public class Client {
 
     public void run() {
         try {
-            channel = bootstrap.connect(HOST, PORT).channel();
+            channel = bootstrap.connect(host, port).channel();
             channel.closeFuture().sync();
         } catch (Exception exception) {
             exception.printStackTrace();
