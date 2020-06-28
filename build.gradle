@@ -23,3 +23,15 @@ dependencies {
 
     compile 'org.apache.kafka:kafka-clients:2.0.1'
 }
+
+jar {
+    archiveName 'chatting-application.jar'
+    manifest {
+        attributes 'Main-Class': 'kafka.chatting.ChattingApplication'
+    }
+    from {
+        configurations.compile.collect {
+            it.isDirectory()? it: zipTree(it)
+        }
+    }
+}
