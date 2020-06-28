@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.concurrent.Flow.Subscriber;
 import javax.swing.*;
 
-// TODO: 2020-06-27 processReceivedMessage 메서드 간소화
 public class ChattingDialog extends JDialog {
     private final ChattingPanel chattingPanel;
     private final JPanel inputPanel;
@@ -49,9 +48,9 @@ public class ChattingDialog extends JDialog {
             public void adjustmentValueChanged(AdjustmentEvent adjustmentEvent) {
                 if (!brm.getValueIsAdjusting() && wasAtBottom) {
                     brm.setValue(brm.getMaximum());
-                } else {
-                    wasAtBottom = ((brm.getValue() + brm.getExtent()) == brm.getMaximum());
+                    return;
                 }
+                wasAtBottom = ((brm.getValue() + brm.getExtent()) == brm.getMaximum());
             }
         });
 
@@ -61,17 +60,21 @@ public class ChattingDialog extends JDialog {
 
     private void processReceivedMessage(Message message) {
         System.out.println("onNext(ChattingDialog[" + chatRoomNo + "]) -> " + message);
-        if (this.chatRoomNo.equals(message.getChatRoomNo())) {
-            if (message.getMessageType() == Message.MessageType.SERVER
-                    && message.getCommandType() == Message.CommandType.LEAVE
-                    && ClientInstance.getInstance().getUser().equals(message.getUser())) {
-                this.dismiss();
-                return;
-            }
-            chattingPanel.addMessageToTextPane(message);
-        } else {
+        if (!this.chatRoomNo.equals(message.getChatRoomNo())) {
             System.out.println("This message is not in chatRoomNo=" + chatRoomNo + "(message.chatRoomNo=" + message.getChatRoomNo()+ ")");
+            return;
         }
+
+        if (isLeaveMessage(message)) {
+            this.dismiss();
+            return;
+        }
+        chattingPanel.addMessageToTextPane(message);
+    }
+
+    private boolean isLeaveMessage(Message message) {
+        return message.getCommandType() == Message.CommandType.LEAVE
+                && ClientInstance.getInstance().getUser().equals(message.getUser());
     }
 
     public void dismiss() {
