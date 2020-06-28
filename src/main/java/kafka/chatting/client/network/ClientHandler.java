@@ -7,7 +7,6 @@ import kafka.chatting.model.Message;
 import kafka.chatting.server.network.Server;
 import kafka.chatting.utility.MessageFactory;
 
-// TODO: 2020-06-23 processReadMessage 간소화
 public class ClientHandler extends SimpleChannelInboundHandler<String> {
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
@@ -45,32 +44,6 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
             default:
                 System.out.println("Command Not Found");
         }
-//        if (message.getMessageType() == Message.MessageType.SERVER
-//                && message.getCommandType() == Message.CommandType.SET_USER) {
-//            ClientInstance.getInstance().setUser(message.getUser());
-//            ClientInstance.getInstance().send(MessageFactory.chatRoomListClientMessage());
-//            return;
-//        } else if (message.getCommandType() == Message.CommandType.CREATE_CHAT_ROOM) {
-//            ClientInstance.getInstance().publishMessage(message);
-//            return;
-        } else if (message.getMessageType() == Message.MessageType.SERVER
-                && message.getCommandType() == Message.CommandType.LEAVE
-                && ClientInstance.getInstance().getUser().equals(message.getUser())) {
-            ClientInstance.getInstance().publishMessage(message);
-            System.out.println("Exit this room(chatRoomNo=" + message.getChatRoomNo() + ") because of user '!quit' command.");
-            ClientInstance.getInstance().removeChatRoomNo(message.getChatRoomNo());
-            ClientInstance.getInstance().publishMessage(message);
-            return;
-//        } else if (message.getCommandType() == Message.CommandType.JOIN
-//                && ClientInstance.getInstance().getUser().equals(message.getUser())) {
-//            ClientInstance.getInstance().publishMessage(message);
-//            return;
-        } else if (message.getCommandType() != Message.CommandType.GET_CHAT_ROOM_LIST) {
-            ClientInstance.getInstance().addMessage(message);
-            ClientInstance.getInstance().publishMessage(message);
-            return;
-        }
-//        ClientInstance.getInstance().publishMessage(message);
     }
 
     @Override
@@ -86,12 +59,10 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
     }
 
     private void processGetChatRoomListResponse(Message message) {
-//        ClientInstance.getInstance().publishMessage(message);
         publishMessage(message);
     }
 
     private void processCreateChatRoomResponse(Message message) {
-//        ClientInstance.getInstance().publishMessage(message);
         publishMessage(message);
     }
 
@@ -105,17 +76,16 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
 
     private void processLeaveResponse(Message message) {
         if (ClientInstance.getInstance().getUser().equals(message.getUser())) {
-//        ClientInstance.getInstance().publishMessage(message);
             publishMessage(message);
             System.out.println("Exit this room(chatRoomNo=" + message.getChatRoomNo() + ") because of user '!quit' command.");
             ClientInstance.getInstance().removeChatRoomNo(message.getChatRoomNo());
-//        publishMessage(message);
             return;
         }
         processNormalResponse(message);
     }
 
     private void processNormalResponse(Message message) {
+        ClientInstance.getInstance().addMessage(message);
         publishMessage(message);
     }
 

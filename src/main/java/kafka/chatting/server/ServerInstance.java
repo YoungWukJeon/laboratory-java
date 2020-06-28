@@ -60,10 +60,16 @@ public enum ServerInstance {
     public void processReadMessage(Message message) {
         switch (message.getCommandType()) {
             case JOIN:
+                server.addUserInChatRoomNo(message.getUser(), message.getChatRoomNo());
+                broadcast(message);
+                return;
             case LEAVE:
+                broadcast(message);
+                server.removeUserInChatRoomNo(message.getUser(), message.getChatRoomNo());
+                return;
             case NORMAL:
                 broadcast(message);
-                break;
+                return;
             default:
                 System.out.println("Command Not Found");
         }

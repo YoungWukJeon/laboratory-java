@@ -15,6 +15,7 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
+import java.util.HashSet;
 import java.util.Set;
 
 public class Server {
@@ -71,12 +72,27 @@ public class Server {
     public void broadcast(Message message) {
         System.out.println("Server broadcast > " + message);
         channelGroup.stream()
-//                .filter(Predicate.not(
-//                        channel -> message.getCommandType() == Message.CommandType.JOIN
-//                                && channel.attr(Server.USER).get().equals(message.getUser())))
-                .filter(channel -> channel.attr(Server.CHAT_ROOM_NO).get() != null
-                        && channel.attr(Server.CHAT_ROOM_NO).get().contains(message.getChatRoomNo()))
+                .filter(channel -> channel.attr(Server.CHAT_ROOM_NO).get().contains(message.getChatRoomNo()))
                 .forEach(channel -> writeMessage(channel, message));
+    }
+
+    public void addUserInChatRoomNo(User user, int chatRoomNo) {
+        channelGroup.stream()
+                .filter(channel -> channel.attr(Server.USER).get().equals(user))
+                .forEach(channel -> {
+                    Set<Integer> chatRoomNoes = channel.attr(Server.CHAT_ROOM_NO).get();
+                    if (chatRoomNoes == null) {
+                        chatRoomNoes = new HashSet<>();
+                        channel.attr(Server.CHAT_ROOM_NO).set(chatRoomNoes);
+                    }
+                    channel.attr(Server.CHAT_ROOM_NO).get().add(chatRoomNo);
+                });
+    }
+
+    public void removeUserInChatRoomNo(User user, int chatRoomNo) {
+        channelGroup.stream()
+                .filter(channel -> channel.attr(Server.USER).get().equals(user))
+                .forEach(channel -> channel.attr(Server.CHAT_ROOM_NO).get().remove(chatRoomNo));
     }
 
     private void writeMessage(Channel channel, Message message) {

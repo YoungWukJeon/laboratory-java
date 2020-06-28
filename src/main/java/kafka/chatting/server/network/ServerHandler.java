@@ -11,7 +11,6 @@ import kafka.chatting.utility.MessageFactory;
 import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -88,7 +87,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
                 processCreateChatRoom(channel);
                 return;
             case JOIN:
-                processJoinRequest(channel, message);
+                processJoinRequest(message);
                 return;
             case LEAVE:
                 processLeaveRequest(message);
@@ -115,21 +114,12 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
                         ServerInstance.getInstance().createChatRoomNo()));
     }
 
-    private void processJoinRequest(Channel channel, Message message) {
-        Set<Integer> chatRoomNoes = channel.attr(Server.CHAT_ROOM_NO).get();
-
+    private void processJoinRequest(Message message) {
         if (!ServerInstance.getInstance().isJoinedChatRoom(message.getChatRoomNo())) {
             String topicName = String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo());
             KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), topicName);
             ServerInstance.getInstance().createChatRoomConsumer(message.getChatRoomNo());
         }
-
-        if (chatRoomNoes == null) {
-            chatRoomNoes = new HashSet<> ();
-            channel.attr(Server.CHAT_ROOM_NO).set(chatRoomNoes);
-        }
-        chatRoomNoes.add(message.getChatRoomNo());
-
         publish(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
     }
 
