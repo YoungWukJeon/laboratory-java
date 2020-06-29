@@ -12,6 +12,7 @@ import kafka.chatting.model.Message;
 import kafka.chatting.model.User;
 
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class ServerHandler extends SimpleChannelInboundHandler<String> {
@@ -84,7 +85,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
                 processGetChatRoomListRequest(channel);
                 return;
             case CREATE_CHAT_ROOM:
-                processCreateChatRoom(channel);
+                processCreateChatRoom(channel, message.getUser());
                 return;
             case JOIN:
                 processJoinRequest(message);
@@ -103,26 +104,39 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
     private void processGetChatRoomListRequest(Channel channel) {
         ServerInstance.getInstance().send(channel,
                 MessageFactory.clientGetChatRoomListServerMessage(
-                        ServerInstance.getInstance().getChatRooms().stream()
+                        ServerInstance.getInstance()
+                                .getChatRooms()
+                                .stream()
                                 .map(Object::toString)
                                 .collect(Collectors.joining(" "))));
     }
 
-    private void processCreateChatRoom(Channel channel) {
-        int chatRoomNo = ServerInstance.getInstance().createChatRoomNo();
+    private void processCreateChatRoom(Channel channel, User user) {
+        String port = Integer.toString(ServerInstance.getInstance().getServerPort());
+        // Kafka에서 Topic을 생성할 수 있는지 알기 위해 topic 목록을 가져옴.
+        // 현재 서버에 없는 topic 이 있을 경우 Consumer도 생성
+        ServerInstance.getInstance().createConsumers(port);
 
-        if (!ServerInstance.getInstance().isJoinedChatRoom(chatRoomNo)) {
-            String topicName = String.format(ServerInstance.TOPIC_NAME_FORMAT, chatRoomNo);
-            KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), topicName);
-            ServerInstance.getInstance().createChatRoomConsumer(chatRoomNo, Integer.toString(ServerInstance.getInstance().getServerPort()));
-            try {
-                Thread.sleep(2000L);    // Consumer Connection 시간 대기
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        int chatRoomNo = ServerInstance.getInstance()
+                .createChatRoomNo()
+                .orElse(-1);
+
+        // 서바가 더 이상 채팅 방을 생성할 수 없을 경우(topic이 100개 이상이 된 경우)
+        if (chatRoomNo == -1) {
+            return;
         }
 
-        ServerInstance.getInstance().send(channel, MessageFactory.clientCreateChatRoomServerMessage(chatRoomNo));
+//        try {
+            String topicName = String.format(ServerInstance.TOPIC_NAME_FORMAT, chatRoomNo);
+            KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), topicName);
+            ServerInstance.getInstance().createChatRoomConsumer(chatRoomNo, port);
+            System.out.println("ChattingServer used kafka consumers: " + new TreeSet<> (ServerInstance.getInstance().getChatRooms()));
+//            Thread.sleep(2000L);    // Consumer Connection 시간 대기
+            ServerInstance.getInstance().send(channel, MessageFactory.clientCreateChatRoomServerMessage(chatRoomNo));
+            ServerInstance.getInstance().addUserInChatRoomNo(user, chatRoomNo);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
     }
 
     private void processJoinRequest(Message message) {
