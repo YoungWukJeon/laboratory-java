@@ -23,7 +23,7 @@ import java.util.function.Predicate;
 public class Server {
     public static final AttributeKey<User> USER = AttributeKey.newInstance("user");
     public static final AttributeKey<Set<Integer>> CHAT_ROOM_NO = AttributeKey.newInstance("chat_room_no");
-    private static final int DEFAULT_PORT = 8888;
+    public static final int DEFAULT_PORT = 8888;
     private final int port;
     private EventLoopGroup parentGroup;
     private EventLoopGroup childGroup;

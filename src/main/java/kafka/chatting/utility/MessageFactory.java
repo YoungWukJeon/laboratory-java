@@ -8,17 +8,19 @@ import java.time.LocalDateTime;
 public class MessageFactory {
     private MessageFactory() {}
 
-    public static Message chatRoomListClientMessage() {
+    public static Message chatRoomListClientMessage(User user) {
         return Message.builder()
                 .messageType(Message.MessageType.CLIENT)
                 .commandType(Message.CommandType.GET_CHAT_ROOM_LIST)
+                .user(user)
                 .build();
     }
 
-    public static Message createChatRoomClientMessage() {
+    public static Message createChatRoomClientMessage(User user) {
         return Message.builder()
                 .messageType(Message.MessageType.CLIENT)
                 .commandType(Message.CommandType.CREATE_CHAT_ROOM)
+                .user(user)
                 .build();
     }
 

@@ -17,6 +17,7 @@ public class Consumer implements Runnable {
     private final String groupName; // Kafka Consumer Group
     private static final long TIMEOUT = 1000L;  // 1 second
     private static final Properties PROPS = new Properties();
+    private KafkaConsumer<String, String> kafkaConsumer;
 
     private Consumer(String topicName, String groupName) {
         this.topicName = topicName;

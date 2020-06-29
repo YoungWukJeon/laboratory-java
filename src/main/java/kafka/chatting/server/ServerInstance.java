@@ -10,8 +10,9 @@ import kafka.chatting.server.network.Server;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.*;
 
 public enum ServerInstance {
     INSTANCE;
@@ -19,8 +20,14 @@ public enum ServerInstance {
     private Server server;
     public static final String TOPIC_PREFIX = "chatting_room_";
     public static final String TOPIC_NAME_FORMAT = TOPIC_PREFIX + "%02d";
+    public static final int MAX_CHAT_ROOM_NUM = 100;
     private static final Map<Integer, Consumer> chatRooms = new HashMap<>();
     private static Producer producer;
+    private static final Executor KAFKA_CONSUMER_EXECUTOR = Executors.newFixedThreadPool(MAX_CHAT_ROOM_NUM, r -> {
+        Thread t = new Thread(r);
+        t.setDaemon(true);
+        return t;
+    });
 
     public static ServerInstance getInstance() {
         if (producer == null) {
@@ -37,10 +44,12 @@ public enum ServerInstance {
         return server.getPort();
     }
 
-    public void createChatRoomConsumer(int no, String groupName) {
+    public void createChatRoomConsumer(int no, String port) {
         if (!isJoinedChatRoom(no)) {
-            Consumer consumer = Consumer.from(String.format(TOPIC_NAME_FORMAT, no), groupName);
-            CompletableFuture.runAsync(consumer);
+            Consumer consumer = Consumer.from(
+                    String.format(TOPIC_NAME_FORMAT, no),
+                    Objects.requireNonNullElse(port, Integer.toString(Server.DEFAULT_PORT)));
+            CompletableFuture.runAsync(consumer, KAFKA_CONSUMER_EXECUTOR);
             chatRooms.put(no, consumer);
         }
     }
@@ -91,10 +100,12 @@ public enum ServerInstance {
         producer.publish(topicName, message);
     }
 
-    public void createConsumers(String groupName) {
+    public void createConsumers(String port) {
         KafkaAdminUtil.getTopics(KafkaAdminConnector.getInstance().getAdminClient())
                 .stream()
                 .filter(s -> s.startsWith(ServerInstance.TOPIC_PREFIX))
-                .forEach(s -> createChatRoomConsumer(Integer.parseInt(s.split("_")[2]), groupName)); // 토픽에 대응하는 Consumer 실행
+                .map(s -> s.split("_")[2])
+                .map(Integer::parseInt)
+                .forEach(i -> createChatRoomConsumer(i, port)); // 토픽에 대응하는 Consumer 실행
     }
 }

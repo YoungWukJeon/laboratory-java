@@ -192,7 +192,6 @@ public class ChatRoomListPanel extends JPanel {
 
     private void processCreateChatRoomResponse(Message message) {
         changeChatRoomInfo(ChatRoomInfo.from(message.getChatRoomNo(), "-", true));
-
         openChattingDialog(message.getChatRoomNo());
     }
 

@@ -55,7 +55,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
 
     private void processSetUserResponse(Message message) {
         ClientInstance.getInstance().setUser(message.getUser());
-        ClientInstance.getInstance().send(MessageFactory.chatRoomListClientMessage());
+        ClientInstance.getInstance().send(MessageFactory.chatRoomListClientMessage(ClientInstance.getInstance().getUser()));
     }
 
     private void processGetChatRoomListResponse(Message message) {

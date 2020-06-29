@@ -109,17 +109,23 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
     }
 
     private void processCreateChatRoom(Channel channel) {
-        ServerInstance.getInstance().send(channel,
-                MessageFactory.clientCreateChatRoomServerMessage(
-                        ServerInstance.getInstance().createChatRoomNo()));
+        int chatRoomNo = ServerInstance.getInstance().createChatRoomNo();
+
+        if (!ServerInstance.getInstance().isJoinedChatRoom(chatRoomNo)) {
+            String topicName = String.format(ServerInstance.TOPIC_NAME_FORMAT, chatRoomNo);
+            KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), topicName);
+            ServerInstance.getInstance().createChatRoomConsumer(chatRoomNo, Integer.toString(ServerInstance.getInstance().getServerPort()));
+            try {
+                Thread.sleep(2000L);    // Consumer Connection 시간 대기
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        ServerInstance.getInstance().send(channel, MessageFactory.clientCreateChatRoomServerMessage(chatRoomNo));
     }
 
     private void processJoinRequest(Message message) {
-        if (!ServerInstance.getInstance().isJoinedChatRoom(message.getChatRoomNo())) {
-            String topicName = String.format(ServerInstance.TOPIC_NAME_FORMAT, message.getChatRoomNo());
-            KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), topicName);
-            ServerInstance.getInstance().createChatRoomConsumer(message.getChatRoomNo(), Integer.toString(ServerInstance.getInstance().getServerPort()));
-        }
         publish(MessageFactory.userJoinServerMessage(message.getUser(), message.getChatRoomNo()));
     }
 
