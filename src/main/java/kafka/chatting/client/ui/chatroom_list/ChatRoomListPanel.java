@@ -13,17 +13,20 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableRowSorter;
 
 public class ChatRoomListPanel extends JPanel {
     private final String[] headers = new String[] {"no", "recent", "present"};
     private final Map<Integer, ChattingDialog> chattingDialogMap = new HashMap<> ();
     private JTable chatRoomListTable;
     private DefaultTableModel defaultTableModel;
+    private TableRowSorter<DefaultTableModel> sorter;
     private final Subscriber<Message> messageSubscriber = new MessageSubscriber(this::processReceivedMessage);
 
     public ChatRoomListPanel(LayoutManager layoutManager) {
@@ -42,19 +45,29 @@ public class ChatRoomListPanel extends JPanel {
         final List<ChatRoomInfo> chatRoomInfos = ClientInstance.getInstance().getChatRoomInfos();
         final Object[][] contents = new Object[chatRoomInfos.size()][3];
 
-        for (int i = 0; i < chatRoomInfos.size(); i++) {
-            contents[i][0] = chatRoomInfos.get(i).getNo();
-            contents[i][1] = chatRoomInfos.get(i).isPresent()? chatRoomInfos.get(i).getRecent(): "-";
-            contents[i][2] = chatRoomInfos.get(i).isPresent()? "O": "X";
-        }
+        IntStream.range(0, chatRoomInfos.size())
+                .forEach(i -> contents[i] = setRow(chatRoomInfos.get(i)));
 
         return contents;
+    }
+
+    private Object[] setRow(ChatRoomInfo chatRoomInfo) {
+        Object[] row = new Object[3];
+
+        row[0] = chatRoomInfo.getNo();
+        row[1] = chatRoomInfo.isPresent()? chatRoomInfo.getRecent(): "-";
+        row[2] = chatRoomInfo.isPresent()? "O": "X";
+
+        return row;
     }
 
     private void addComponent() {
         defaultTableModel = new DefaultTableModel(changeContent(), headers) {
             @Override
             public Class<?> getColumnClass(int column) {
+                if (column < 0) {
+                    return Object.class;
+                }
                 return getValueAt(0, column).getClass();
             }
 
@@ -66,6 +79,7 @@ public class ChatRoomListPanel extends JPanel {
 
         chatRoomListTable = new JTable(defaultTableModel);
         JScrollPane scrollPane = new JScrollPane(chatRoomListTable);
+        sorter = new TableRowSorter<> (defaultTableModel);
 
         chatRoomListTable.getTableHeader().setReorderingAllowed(false);
         chatRoomListTable.getTableHeader().setResizingAllowed(false);
@@ -78,6 +92,7 @@ public class ChatRoomListPanel extends JPanel {
         chatRoomListTable.setFont(new Font("", Font.PLAIN, 14));
         chatRoomListTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         chatRoomListTable.setRowHeight(21);
+        chatRoomListTable.setRowSorter(sorter);
 
         chatRoomListTable.addMouseListener(new MouseAdapter() {
             @Override
@@ -209,7 +224,15 @@ public class ChatRoomListPanel extends JPanel {
 
     private void changeChatRoomInfo(ChatRoomInfo chatRoomInfo) {
         ClientInstance.getInstance().changeChatRoomInfo(chatRoomInfo);
-        defaultTableModel.setDataVector(changeContent(), headers);
-        resizeColumnWidth();
+        int index = IntStream.range(0, defaultTableModel.getRowCount())
+                .filter(i -> (int) defaultTableModel.getDataVector().get(i).get(0) == chatRoomInfo.getNo())
+                .findFirst()
+                .orElse(-1);
+
+        if (index >= 0) {
+            defaultTableModel.removeRow(index);
+        }
+        defaultTableModel.addRow(setRow(chatRoomInfo));
+        sorter.setSortKeys(List.of(new RowSorter.SortKey(0, SortOrder.ASCENDING)));
     }
 }
