@@ -102,6 +102,8 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
     }
 
     private void processGetChatRoomListRequest(Channel channel) {
+        String port = Integer.toString(ServerInstance.getInstance().getServerPort());
+        ServerInstance.getInstance().createConsumers(port);
         ServerInstance.getInstance().send(channel,
                 MessageFactory.clientGetChatRoomListServerMessage(
                         ServerInstance.getInstance()
