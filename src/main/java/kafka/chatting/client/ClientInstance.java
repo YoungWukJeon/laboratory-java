@@ -43,7 +43,8 @@ public enum ClientInstance {
     }
 
     public void setChatRoomInfos(Set<ChatRoomInfo> chatRoomInfos) {
-        this.chatRoomInfos = chatRoomInfos;
+        this.chatRoomInfos.addAll(chatRoomInfos);
+//        this.chatRoomInfos = chatRoomInfos;
     }
 
     public void changeChatRoomInfo(ChatRoomInfo chatRoomInfo) {
