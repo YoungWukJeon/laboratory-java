@@ -16,7 +16,7 @@ public enum ClientInstance {
     private User user;
     private Client client;
     private final SubmissionPublisher<Message> messagePublisher = new SubmissionPublisher<> ();
-    private Set<ChatRoomInfo> chatRoomInfos = new HashSet<>();
+    private final Set<ChatRoomInfo> chatRoomInfos = new HashSet<>();
     private final Set<Integer> joinChatRoomNos = new HashSet<>();
     private final List<Message> receivedMessages = new ArrayList<>();
 
@@ -42,9 +42,8 @@ public enum ClientInstance {
                 .collect(Collectors.toList());
     }
 
-    public void setChatRoomInfos(Set<ChatRoomInfo> chatRoomInfos) {
+    public void addChatRoomInfos(Set<ChatRoomInfo> chatRoomInfos) {
         this.chatRoomInfos.addAll(chatRoomInfos);
-//        this.chatRoomInfos = chatRoomInfos;
     }
 
     public void changeChatRoomInfo(ChatRoomInfo chatRoomInfo) {

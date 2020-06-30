@@ -128,17 +128,12 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
             return;
         }
 
-//        try {
-            String topicName = String.format(ServerInstance.TOPIC_NAME_FORMAT, chatRoomNo);
-            KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), topicName);
-            ServerInstance.getInstance().createChatRoomConsumer(chatRoomNo, port);
-            System.out.println("ChattingServer used kafka consumers: " + new TreeSet<> (ServerInstance.getInstance().getChatRooms()));
-//            Thread.sleep(2000L);    // Consumer Connection 시간 대기
-            ServerInstance.getInstance().send(channel, MessageFactory.clientCreateChatRoomServerMessage(chatRoomNo));
-            ServerInstance.getInstance().addUserInChatRoomNo(user, chatRoomNo);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
+        String topicName = String.format(ServerInstance.TOPIC_NAME_FORMAT, chatRoomNo);
+        KafkaAdminUtil.createTopic(KafkaAdminConnector.getInstance().getAdminClient(), topicName);
+        ServerInstance.getInstance().createChatRoomConsumer(chatRoomNo, port);
+        System.out.println("ChattingServer used kafka consumers: " + new TreeSet<> (ServerInstance.getInstance().getChatRooms()));
+        ServerInstance.getInstance().send(channel, MessageFactory.clientCreateChatRoomServerMessage(chatRoomNo));
+        ServerInstance.getInstance().addUserInChatRoomNo(user, chatRoomNo);
     }
 
     private void processJoinRequest(Message message) {

@@ -196,7 +196,7 @@ public class ChatRoomListPanel extends JPanel {
     }
 
     private void processGetChatRoomListResponse(Message message) {
-        ClientInstance.getInstance().setChatRoomInfos(
+        ClientInstance.getInstance().addChatRoomInfos(
                 Stream.of(message.getMessage().split(" "))
                         .map(Integer::parseInt)
                         .map(i -> ChatRoomInfo.from(i, "-", false))
