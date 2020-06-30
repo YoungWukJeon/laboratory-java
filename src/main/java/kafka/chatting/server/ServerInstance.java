@@ -19,7 +19,7 @@ public enum ServerInstance {
     private Server server;
     public static final String TOPIC_PREFIX = "chatting_room_";
     public static final String TOPIC_NAME_FORMAT = TOPIC_PREFIX + "%02d";
-    public static final int MAX_CHAT_ROOM_NUM = 5;
+    public static final int MAX_CHAT_ROOM_NUM = 50;
     private static final Map<Integer, Consumer> chatRooms = new HashMap<>();
     private static Producer producer;
     private static final Executor KAFKA_CONSUMER_EXECUTOR = Executors.newFixedThreadPool(MAX_CHAT_ROOM_NUM, r -> {
