@@ -1,2 +1,3 @@
 rootProject.name = 'laboratory'
 include 'kafka-chatting-application'
+include 'feature'
