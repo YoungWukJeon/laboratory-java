@@ -3,9 +3,6 @@ plugins {
 }
 
 group 'edu.study'
-version '1.0-SNAPSHOT'
-
-sourceCompatibility = 12
 
 repositories {
     mavenCentral()
@@ -13,25 +10,4 @@ repositories {
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
-
-    compileOnly 'org.projectlombok:lombok:1.18.6'
-    annotationProcessor 'org.projectlombok:lombok:1.18.6'
-
-    compile 'io.netty:netty-all:4.1.15.Final'
-
-    compile 'com.google.code.gson:gson:2.8.5'
-
-    compile 'org.apache.kafka:kafka-clients:2.0.1'
-}
-
-jar {
-    archiveName 'chatting-application.jar'
-    manifest {
-        attributes 'Main-Class': 'kafka.chatting.ChattingApplication'
-    }
-    from {
-        configurations.compile.collect {
-            it.isDirectory()? it: zipTree(it)
-        }
-    }
 }
