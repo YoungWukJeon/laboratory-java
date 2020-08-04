@@ -4,6 +4,8 @@ plugins {
 
 group 'edu.study'
 
+sourceCompatibility = 14
+
 repositories {
     mavenCentral()
 }
