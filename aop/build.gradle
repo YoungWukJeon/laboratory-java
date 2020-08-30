@@ -1,5 +1,7 @@
 plugins {
     id 'java'
+//    id "aspectj.gradle" version "0.1.6"
+//    id 'org.codehaus.mojo:'
 }
 
 group 'edu.study'
@@ -15,6 +17,11 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.6'
     annotationProcessor 'org.projectlombok:lombok:1.18.6'
 
-    compileOnly 'org.aspectj:aspectjrt:1.6.10'
-    compileOnly 'org.aspectj:aspectjweaver:1.6.10'
+    compileOnly 'org.aspectj:aspectjrt:1.8.9'
+    compileOnly 'org.aspectj:aspectjweaver:1.8.9'
+    compileOnly 'org.aspectj:aspectjtools:1.8.9'
+
+    implementation 'org.codehaus.mojo:build-helper-maven-plugin:3.2.0'
+
+    compileOnly 'org.slf4j:slf4j-api:1.7.25'
 }
