@@ -1,4 +1,4 @@
-package aop;
+package edu.study.aop;
 
 public class Account {
     int balance = 20;

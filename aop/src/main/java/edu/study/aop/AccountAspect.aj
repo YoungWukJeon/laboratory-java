@@ -1,4 +1,4 @@
-package aop;
+package edu.study.aop;
 
 public aspect AccountAspect {
     final int MIN_BALANCE = 10;

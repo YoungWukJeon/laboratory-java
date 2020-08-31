@@ -1,4 +1,4 @@
-package aop;
+package edu.study.aop;
 
 import org.junit.Before;
 import org.junit.Test;
