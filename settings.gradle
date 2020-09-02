@@ -3,3 +3,5 @@ include 'kafka-chatting-application'
 include 'feature'
 include 'aop'
 include 'garbage-collector'
+include 'design-pattern'
+
