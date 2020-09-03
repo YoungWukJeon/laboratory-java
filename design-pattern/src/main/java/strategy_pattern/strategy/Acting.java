@@ -7,7 +7,7 @@ public class Acting {
         actionableStrategy.doAction();
     }
 
-    void setRepairableStrategy(ActionableStrategy actionableStrategy) {
+    void setActionableStrategy(ActionableStrategy actionableStrategy) {
         this.actionableStrategy = actionableStrategy;
     }
 }

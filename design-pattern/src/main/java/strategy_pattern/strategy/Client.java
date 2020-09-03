@@ -5,13 +5,13 @@ public class Client {
         Acting healedScv = new ActionHeal();
         Acting repairedScv = new ActionRepair();
 
-        healedScv.setRepairableStrategy(new HealStrategy());
-        repairedScv.setRepairableStrategy(new RepairStrategy());
+        healedScv.setActionableStrategy(new HealStrategy());
+        repairedScv.setActionableStrategy(new RepairStrategy());
 
         healedScv.doAction();
         repairedScv.doAction();
 
-        repairedScv.setRepairableStrategy(new HealStrategy());
+        repairedScv.setActionableStrategy(new HealStrategy());
         repairedScv.doAction();
     }
 }
